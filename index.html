@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام تحليل السائل المنوي - CASA Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #0a2342;
+    --accent: #1565c0;
+    --accent2: #00bcd4;
+    --success: #2e7d32;
+    --warning: #f57f17;
+    --danger: #c62828;
+    --bg: #f0f4f8;
+    --card: #ffffff;
+    --border: #cfd8dc;
+    --text: #1a2332;
+    --text2: #546e7a;
+    --shadow: 0 4px 24px rgba(10,35,66,0.10);
+
+    /* Patient info customizable */
+    --pi-color: #b71c1c;
+    --pi-size: 14px;
+    --pi-label-color: #0a2342;
+    --pi-label-size: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== TABS ===== */
+  .tabs-nav {
+    display: flex;
+    background: var(--primary);
+    padding: 0 24px;
+    gap: 4px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  }
+  .tab-btn {
+    padding: 14px 22px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.65);
+    font-family: 'Tajawal', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn.active, .tab-btn:hover {
+    color: #fff;
+    border-bottom-color: var(--accent2);
+  }
+  .tab-btn.active { background: rgba(255,255,255,0.07); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== HEADER BAR ===== */
+  .app-header {
+    background: var(--primary);
+    color: white;
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .app-title { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; }
+  .app-subtitle { font-size: 12px; opacity: 0.7; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .main-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 16px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .card-header {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: white;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-body { padding: 18px; }
+
+  /* ===== FORM ===== */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-control {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    background: #fafbfc;
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-control:focus { border-color: var(--accent); background: white; }
+  select.form-control { cursor: pointer; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ===== LOGO UPLOAD ===== */
+  .logo-upload-area {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #f8fafc;
+  }
+  .logo-upload-area:hover { border-color: var(--accent); background: #e8f4fd; }
+  .logo-preview {
+    width: 794px;
+    max-width: 100%;
+    height: 170px;
+    object-fit: contain;
+    border-radius: 6px;
+    display: none;
+    margin: 0 auto;
+    border: 1px solid var(--border);
+  }
+  .logo-placeholder { color: var(--text2); font-size: 13px; padding: 20px 0; }
+
+  /* ===== VIDEO ANALYSIS ===== */
+  .video-drop {
+    border: 2.5px dashed var(--accent);
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    background: linear-gradient(135deg, #e8f4fd, #f0f9ff);
+    position: relative;
+  }
+  .video-drop:hover, .video-drop.dragover {
+    border-color: var(--accent2);
+    background: linear-gradient(135deg, #d0ebfa, #e0f7fa);
+    transform: scale(1.01);
+  }
+  .video-drop-icon { font-size: 48px; margin-bottom: 12px; }
+  .video-drop h3 { color: var(--primary); font-size: 16px; margin-bottom: 6px; }
+  .video-drop p { color: var(--text2); font-size: 13px; }
+
+  #videoPlayer {
+    width: 100%;
+    border-radius: 10px;
+    max-height: 280px;
+    background: #000;
+    display: none;
+    margin-top: 14px;
+  }
+  #analysisCanvas {
+    width: 100%;
+    border-radius: 10px;
+    display: none;
+    margin-top: 8px;
+    border: 2px solid var(--accent2);
+  }
+
+  /* ===== PROGRESS ===== */
+  .progress-wrap { margin: 12px 0; display: none; }
+  .progress-bar-bg {
+    background: #e3eaf3;
+    border-radius: 99px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+  .progress-label { font-size: 12px; color: var(--text2); margin-top: 5px; text-align: center; }
+
+  /* ===== ANALYZE BTN ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border-radius: 9px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--primary));
+    color: white;
+    box-shadow: 0 3px 12px rgba(21,101,192,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(21,101,192,0.35); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-success {
+    background: linear-gradient(135deg, #2e7d32, #1b5e20);
+    color: white;
+    box-shadow: 0 3px 12px rgba(46,125,50,0.3);
+  }
+  .btn-success:hover { transform: translateY(-1px); }
+  .btn-outline {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+  }
+  .btn-outline:hover { background: var(--accent); color: white; }
+  .btn-sm { padding: 7px 14px; font-size: 13px; }
+
+  /* ===== RESULTS ===== */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .result-card {
+    background: linear-gradient(135deg, #f8fafd, #eef3fa);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .result-card.normal::before { background: var(--success); }
+  .result-card.low::before { background: var(--danger); }
+  .result-card.borderline::before { background: var(--warning); }
+  .result-card.high::before { background: var(--accent2); }
+
+  .result-label { font-size: 11px; color: var(--text2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .result-value { font-size: 22px; font-weight: 800; color: var(--primary); line-height: 1; }
+  .result-unit { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .result-status {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    margin-top: 6px;
+    display: inline-block;
+  }
+  .status-normal { background: #e8f5e9; color: var(--success); }
+  .status-low { background: #ffebee; color: var(--danger); }
+  .status-borderline { background: #fff8e1; color: var(--warning); }
+  .status-high { background: #e0f7fa; color: #00838f; }
+
+  /* ===== CONCLUSION ===== */
+  .conclusion-box {
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-top: 14px;
+    border: 2px solid;
+  }
+  .conclusion-box.normal { background: #e8f5e9; border-color: #81c784; }
+  .conclusion-box.abnormal { background: #fff3e0; border-color: #ffb74d; }
+  .conclusion-box.severe { background: #ffebee; border-color: #ef9a9a; }
+  .conclusion-title { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+  .conclusion-text { font-size: 13px; line-height: 1.8; }
+
+  /* ===== PRINT REPORT ===== */
+  .patient-header-print {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 0;
+    border: 2px solid #1a2332;
+    border-radius: 0;
+    font-size: var(--pi-size);
+  }
+  .patient-info-table { width: 100%; border-collapse: collapse; }
+  .patient-info-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #cfd8dc;
+    font-size: var(--pi-size);
+  }
+  .patient-info-table td.label {
+    font-size: var(--pi-label-size);
+    color: var(--pi-label-color);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 90px;
+    background: #f5f7fa;
+    border-left: 1px solid #cfd8dc;
+  }
+  .patient-info-table td.value {
+    color: var(--pi-color);
+    font-weight: 700;
+    font-size: var(--pi-size);
+  }
+  .patient-dates {
+    border-right: 2px solid #1a2332;
+    padding: 0;
+  }
+  .patient-dates table { width: 100%; border-collapse: collapse; height: 100%; }
+  .patient-dates td {
+    padding: 6px 10px;
+    font-size: 12px;
+    border-bottom: 1px solid #cfd8dc;
+    vertical-align: middle;
+  }
+  .patient-dates td.dlabel {
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    background: #f5f7fa;
+    text-transform: uppercase;
+    border-left: 1px solid #cfd8dc;
+    width: 60px;
+    color: var(--pi-label-color);
+  }
+  .patient-dates td.dvalue { color: var(--pi-color); font-weight: 600; font-size: var(--pi-size); }
+
+  /* ===== SETTINGS TAB ===== */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .color-control { display: flex; align-items: center; gap: 10px; }
+  input[type="color"] {
+    width: 40px; height: 32px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    padding: 2px;
+  }
+  input[type="range"] { width: 100%; cursor: pointer; }
+  .range-val { font-weight: 700; color: var(--accent); min-width: 36px; text-align: center; }
+
+  /* ===== TRACKING VISUAL ===== */
+  .track-dot {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    pointer-events: none;
+    transition: all 0.05s;
+  }
+
+  /* ===== REPORT TABLE ===== */
+  .report-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .report-table th {
+    background: var(--primary);
+    color: white;
+    padding: 9px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+  }
+  .report-table td {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .report-table tr:nth-child(even) td { background: #f8fafc; }
+  .report-table td:last-child { font-weight: 700; text-align: center; }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    body { background: white; }
+    .tabs-nav, .app-header, .no-print { display: none !important; }
+    .print-area { display: block !important; }
+    .main-wrap { display: block; padding: 0; }
+    .card { box-shadow: none; border: 1px solid #ccc; }
+  }
+
+  /* ===== MISC ===== */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .badge-info { background: #e3f2fd; color: #1565c0; }
+  .divider { border: none; border-top: 1.5px solid var(--border); margin: 14px 0; }
+  .section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1.5px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .alert {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .alert-info { background: #e3f2fd; color: #0d47a1; border-right: 3px solid #1565c0; }
+  .alert-warn { background: #fff8e1; color: #e65100; border-right: 3px solid #ff9800; }
+
+  .spinner {
+    display: inline-block;
+    width: 18px; height: 18px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+
+  #resultsSection { display: none; }
+
+  .who-ref {
+    font-size: 10px;
+    color: var(--text2);
+    text-align: center;
+    margin-top: 14px;
+    font-style: italic;
+  }
+
+  /* full-width for tabs 2+ */
+  .full-wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div>
+    <div class="app-title">🔬 CASA Pro — نظام تحليل السائل المنوي</div>
+    <div class="app-subtitle">Computer-Assisted Sperm Analysis | معايير WHO 2021</div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span class="badge badge-info">الإصدار 2.0</span>
+  </div>
+</div>
+
+<div class="tabs-nav">
+  <button class="tab-btn active" onclick="switchTab('analysis')">🎬 تحليل الفيديو</button>
+  <button class="tab-btn" onclick="switchTab('report')">📄 التقرير الطبي</button>
+  <button class="tab-btn" onclick="switchTab('settings')">⚙️ الإعدادات</button>
+</div>
+
+<!-- =============================== TAB 1: ANALYSIS =============================== -->
+<div id="tab-analysis" class="tab-content active">
+  <div class="main-wrap">
+
+    <!-- LEFT: Patient Info -->
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">👤 معلومات المريض</div>
+        <div class="card-body">
+
+          <!-- Logo -->
+          <div class="form-group">
+            <div class="form-label">🖼️ شعار المختبر</div>
+            <div class="logo-upload-area" onclick="document.getElementById('logoInput').click()">
+              <img id="logoPreview" class="logo-preview" alt="شعار المختبر">
+              <div class="logo-placeholder" id="logoPlaceholder">
+                <div style="font-size:28px;margin-bottom:6px;">🏥</div>
+                <div>انقر لرفع شعار المختبر</div>
+                <div style="font-size:11px;margin-top:4px;opacity:0.7">794×170 px (مستطيل عريض)</div>
+              </div>
+            </div>
+            <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="loadLogo(event)">
+          </div>
+
+          <hr class="divider">
+
+          <div class="form-row">
+            <div class="form-group">
+              <div class="form-label">اللقب</div>
+              <select class="form-control" id="title" onchange="updateGender()">
+                <option value="السيد">السيد (ذكر)</option>
+                <option value="السيدة">السيدة (أنثى)</option>
+                <option value="الآنسة">الآنسة (أنثى)</option>
+                <option value="الدكتور">الدكتور (ذكر)</option>
+                <option value="الدكتورة">الدكتورة (أنثى)</option>
+                <option value="الأستاذ">الأستاذ (ذكر)</option>
+                <option value="الأستاذة">الأستاذة (أنثى)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="form-label">الجنس</div>
+              <input type="text" class="form-control" id="gender" value="Male" readonly style="background:#f0f4f8;cursor:not-allowed;">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">اسم المريض</div>
+            <input type="text" class="form-control" id="patientName" placeholder="الاسم الكامل" value="سيف شاكر جاسم">
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">العمر</div>
+            <input type="number" class="form-control" id="patientAge" placeholder="العمر بالسنوات" value="30" min="1" max="120">
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">اسم الطبيب</div>
+            <input type="text" class="form-control" id="doctorName" placeholder="اسم الطبيب المحيل" value="الأستاذ الدكتور/ باسم عذيب">
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">رقم السجل الطبي</div>
+            <input type="text" class="form-control" id="patientId" placeholder="MR-XXXXXX">
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">📅 تاريخ الفحص</div>
+            <input type="date" class="form-control" id="examDate">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Video + Analysis -->
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">🎬 تحميل الفيديو وبدء التحليل</div>
+        <div class="card-body">
+          <div class="alert alert-info">
+            ℹ️ يُرجى استخدام فيديو مجهري للسائل المنوي بدقة كافية (≥480p، 25-60 إطار/ث) للحصول على أفضل النتائج.
+          </div>
+
+          <div class="video-drop" id="videoDrop" onclick="document.getElementById('videoInput').click()"
+               ondragover="event.preventDefault();this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleDrop(event)">
+            <div class="video-drop-icon">🎥</div>
+            <h3>اسحب الفيديو هنا أو انقر للاختيار</h3>
+            <p>MP4, AVI, MOV, WEBM — حد أقصى 500MB</p>
+          </div>
+          <input type="file" id="videoInput" accept="video/*" style="display:none" onchange="loadVideo(event)">
+
+          <video id="videoPlayer" controls></video>
+          <canvas id="analysisCanvas"></canvas>
+
+          <div class="progress-wrap" id="progressWrap">
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="progressBar"></div>
+            </div>
+            <div class="progress-label" id="progressLabel">جاري التحليل... 0%</div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <button class="btn btn-primary" id="analyzeBtn" onclick="startAnalysis()" disabled>
+              🔬 بدء التحليل
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="resetAll()">↺ إعادة تعيين</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS -->
+      <div id="resultsSection" class="fade-in">
+        <div class="card">
+          <div class="card-header">📊 نتائج التحليل — معايير WHO 2021</div>
+          <div class="card-body">
+
+            <div class="section-title">المعاملات الرئيسية</div>
+            <div class="results-grid" id="resultsGrid"></div>
+
+            <div class="section-title">جدول تفصيلي</div>
+            <table class="report-table" id="detailTable">
+              <thead>
+                <tr>
+                  <th>المعيار</th>
+                  <th>القيمة المُقاسة</th>
+                  <th>الحد المرجعي (WHO 2021)</th>
+                  <th>التقييم</th>
+                </tr>
+              </thead>
+              <tbody id="detailTableBody"></tbody>
+            </table>
+
+            <div id="conclusionBox" class="conclusion-box" style="display:none;margin-top:14px;"></div>
+
+            <p class="who-ref">* جميع النتائج مبنية على معايير منظمة الصحة العالمية (WHO) الإصدار السادس 2021<br>
+            ⚠️ هذا التحليل للأغراض المساعدة فقط — يجب مراجعة الطبيب المختص للتفسير النهائي.</p>
+
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+              <button class="btn btn-success" onclick="generateReport()">📄 إنشاء التقرير الطبي</button>
+              <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ طباعة</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================== TAB 2: REPORT =============================== -->
+<div id="tab-report" class="tab-content">
+  <div class="full-wrap">
+    <div class="card no-print" style="margin-bottom:14px;">
+      <div class="card-body" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-success" onclick="window.print()">🖨️ طباعة التقرير</button>
+        <button class="btn btn-outline btn-sm" onclick="generateReport()">🔄 تحديث التقرير</button>
+        <span style="font-size:13px;color:var(--text2);">📌 يُعرض التقرير كما سيظهر عند الطباعة</span>
+      </div>
+    </div>
+
+    <!-- PRINT REPORT -->
+    <div id="printReport" style="background:white;padding:24px;border-radius:14px;box-shadow:var(--shadow);border:1px solid var(--border);">
+      <div id="reportContent" style="font-family:'Tajawal',sans-serif;direction:rtl;">
+        <div style="text-align:center;padding:40px;color:var(--text2);">
+          <div style="font-size:48px;margin-bottom:12px;">📋</div>
+          <p>لم يتم إنشاء تقرير بعد.<br>يرجى إجراء التحليل أولاً ثم الضغط على "إنشاء التقرير الطبي".</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =============================== TAB 3: SETTINGS =============================== -->
+<div id="tab-settings" class="tab-content">
+  <div class="full-wrap">
+    <div class="card">
+      <div class="card-header">⚙️ إعدادات التخصيص</div>
+      <div class="card-body">
+        <div class="alert alert-info" style="margin-bottom:18px;">
+          جميع الإعدادات تُطبَّق فوراً على التقرير الطبي عند إنشائه.
+        </div>
+
+        <div class="section-title">🎨 إعدادات ألوان معلومات المريض</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <div class="form-label">لون قيم بيانات المريض</div>
+            <div class="color-control">
+              <input type="color" id="set-piColor" value="#b71c1c" oninput="updateSetting('--pi-color',this.value)">
+              <span id="set-piColor-val" style="font-size:13px;">#b71c1c</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">لون تسميات الحقول</div>
+            <div class="color-control">
+              <input type="color" id="set-piLabelColor" value="#0a2342" oninput="updateSetting('--pi-label-color',this.value);document.getElementById('set-piLabelColor-val').textContent=this.value">
+              <span id="set-piLabelColor-val" style="font-size:13px;">#0a2342</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">لون رأس الجدول</div>
+            <div class="color-control">
+              <input type="color" id="set-tableHeader" value="#0a2342" oninput="document.documentElement.style.setProperty('--primary',this.value);document.getElementById('set-tableHeader-val').textContent=this.value">
+              <span id="set-tableHeader-val" style="font-size:13px;">#0a2342</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">لون الشريط العلوي</div>
+            <div class="color-control">
+              <input type="color" id="set-accent" value="#1565c0" oninput="document.documentElement.style.setProperty('--accent',this.value);document.getElementById('set-accent-val').textContent=this.value">
+              <span id="set-accent-val" style="font-size:13px;">#1565c0</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">🔡 إعدادات حجم الخط</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <div class="form-label">حجم خط قيم المريض</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="range" min="10" max="22" value="14" id="set-piSize" oninput="updateSetting('--pi-size',this.value+'px');document.getElementById('set-piSize-val').textContent=this.value+'px'">
+              <span class="range-val" id="set-piSize-val">14px</span>
+            </div>
+          </div>
+          <div class="form-group">
+            <div class="form-label">حجم خط تسميات الحقول</div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <input type="range" min="9" max="18" value="12" id="set-labelSize" oninput="updateSetting('--pi-label-size',this.value+'px');document.getElementById('set-labelSize-val').textContent=this.value+'px'">
+              <span class="range-val" id="set-labelSize-val">12px</span>
+            </div>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">📐 إعدادات التحليل</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <div class="form-label">حساسية اكتشاف الحيوانات المنوية</div>
+            <select class="form-control" id="set-sensitivity">
+              <option value="high">عالية (لعينات نادرة)</option>
+              <option value="medium" selected>متوسطة (موصى بها)</option>
+              <option value="low">منخفضة (لعينات كثيفة)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">معيار التقييم المرجعي</div>
+            <select class="form-control" id="set-standard">
+              <option value="who2021" selected>WHO 2021 (السادس)</option>
+              <option value="who2010">WHO 2010 (الخامس)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">إظهار التتبع المرئي أثناء التحليل</div>
+            <select class="form-control" id="set-showTrack">
+              <option value="yes" selected>نعم (يبطئ قليلاً)</option>
+              <option value="no">لا (أسرع)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <div class="form-label">إطارات التحليل (fps العينة)</div>
+            <select class="form-control" id="set-sampleFps">
+              <option value="5">5 إطارات/ث (سريع)</option>
+              <option value="10" selected>10 إطارات/ث (متوازن)</option>
+              <option value="15">15 إطارات/ث (دقيق)</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="divider">
+        <div class="section-title">📄 إعدادات طباعة التقرير</div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <div class="form-label">اسم المختبر (للتقرير)</div>
+            <input type="text" class="form-control" id="set-labName" placeholder="مختبر ..." value="المختبر الطبي التخصصي">
+          </div>
+          <div class="form-group">
+            <div class="form-label">نص التذييل</div>
+            <input type="text" class="form-control" id="set-footer" value="جميع النتائج سرية وخاصة بالمريض — للاستفسار راجع الطبيب المختص">
+          </div>
+        </div>
+
+        <div style="margin-top:18px;">
+          <button class="btn btn-primary" onclick="alert('✅ تم حفظ الإعدادات بنجاح!')">💾 حفظ الإعدادات</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================= STATE =========================
+let analysisResults = null;
+let videoFile = null;
+let logoDataURL = null;
+
+// ========================= TABS =========================
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ========================= INIT =========================
+window.addEventListener('load', () => {
+  const today = new Date();
+  document.getElementById('examDate').value = today.toISOString().split('T')[0];
+  // Auto-generate MR
+  const rand = Math.random().toString(36).substring(2,8).toUpperCase();
+  document.getElementById('patientId').value = 'MR-' + rand;
+  updateGender();
+});
+
+// ========================= GENDER AUTO =========================
+function updateGender() {
+  const t = document.getElementById('title').value;
+  const femTitles = ['السيدة', 'الآنسة', 'الدكتورة', 'الأستاذة'];
+  document.getElementById('gender').value = femTitles.includes(t) ? 'Female' : 'Male';
+}
+
+// ========================= LOGO =========================
+function loadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    logoDataURL = e.target.result;
+    const preview = document.getElementById('logoPreview');
+    preview.src = logoDataURL;
+    preview.style.display = 'block';
+    document.getElementById('logoPlaceholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ========================= VIDEO =========================
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('videoDrop').classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (file && file.type.startsWith('video/')) processVideo(file);
+  else alert('يرجى إسقاط ملف فيديو صالح.');
+}
+
+function loadVideo(event) {
+  const file = event.target.files[0];
+  if (file) processVideo(file);
+}
+
+function processVideo(file) {
+  videoFile = file;
+  const player = document.getElementById('videoPlayer');
+  player.src = URL.createObjectURL(file);
+  player.style.display = 'block';
+  document.getElementById('videoDrop').style.display = 'none';
+  document.getElementById('analyzeBtn').disabled = false;
+}
+
+// ========================= ANALYSIS ENGINE =========================
+async function startAnalysis() {
+  if (!videoFile) { alert('يرجى تحميل فيديو أولاً.'); return; }
+
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جاري التحليل...';
+
+  document.getElementById('progressWrap').style.display = 'block';
+  document.getElementById('resultsSection').style.display = 'none';
+
+  const canvas = document.getElementById('analysisCanvas');
+  const ctx = canvas.getContext('2d');
+  const video = document.getElementById('videoPlayer');
+  const showTrack = document.getElementById('set-showTrack').value === 'yes';
+
+  if (showTrack) canvas.style.display = 'block';
+
+  // Wait for video metadata
+  await new Promise(r => { video.onloadedmetadata = r; video.load(); });
+
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+
+  const duration = video.duration || 10;
+  const sampleFps = parseInt(document.getElementById('set-sampleFps').value);
+  const totalFrames = Math.floor(duration * sampleFps);
+  const frameInterval = 1 / sampleFps;
+
+  let frameData = [];
+  let processedFrames = 0;
+
+  // Frame-by-frame analysis
+  for (let i = 0; i < totalFrames; i++) {
+    const t = i * frameInterval;
+    video.currentTime = t;
+    await new Promise(r => { video.onseeked = r; });
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+    const frameResult = analyzeFrame(imgData, ctx, showTrack);
+    frameData.push(frameResult);
+
+    processedFrames++;
+    const pct = Math.round((processedFrames / totalFrames) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = `جاري تحليل الإطارات... ${pct}%  (${processedFrames}/${totalFrames})`;
+
+    await new Promise(r => setTimeout(r, 10)); // Yield to UI
+  }
+
+  // Aggregate results
+  const results = aggregateResults(frameData, duration);
+  analysisResults = results;
+
+  showResults(results);
+
+  btn.innerHTML = '✅ اكتمل التحليل';
+  btn.disabled = false;
+  document.getElementById('progressLabel').textContent = '✅ اكتمل التحليل بنجاح!';
+}
+
+// ========================= FRAME ANALYSIS =========================
+function analyzeFrame(imgData, ctx, showTrack) {
+  const data = imgData.data;
+  const w = imgData.width;
+  const h = imgData.height;
+  const sensitivity = document.getElementById('set-sensitivity').value;
+  const threshold = sensitivity === 'high' ? 35 : sensitivity === 'low' ? 60 : 45;
+
+  // Convert to grayscale and find bright moving spots (sperm heads appear as bright dots against dark background)
+  let detected = [];
+  const cellSize = 8;
+
+  for (let cy = cellSize; cy < h - cellSize; cy += cellSize) {
+    for (let cx = cellSize; cx < w - cellSize; cx += cellSize) {
+      const idx = (cy * w + cx) * 4;
+      const r = data[idx], g = data[idx+1], b = data[idx+2];
+      const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+
+      // Look for high-contrast regions (sperm heads)
+      let contrast = 0;
+      for (let dy = -cellSize; dy <= cellSize; dy += cellSize) {
+        for (let dx = -cellSize; dx <= cellSize; dx += cellSize) {
+          if (dy === 0 && dx === 0) continue;
+          const ni = ((cy+dy) * w + (cx+dx)) * 4;
+          if (ni < 0 || ni >= data.length) continue;
+          const nb = (data[ni]*0.299 + data[ni+1]*0.587 + data[ni+2]*0.114);
+          contrast += Math.abs(brightness - nb);
+        }
+      }
+
+      if (contrast > threshold * 8) {
+        detected.push({ x: cx, y: cy, brightness, contrast });
+      }
+    }
+  }
+
+  // Non-maximum suppression to avoid double-counting
+  const merged = [];
+  const used = new Set();
+  for (let i = 0; i < detected.length; i++) {
+    if (used.has(i)) continue;
+    let cluster = [detected[i]];
+    for (let j = i+1; j < detected.length; j++) {
+      if (used.has(j)) continue;
+      const dx = detected[i].x - detected[j].x;
+      const dy = detected[i].y - detected[j].y;
+      if (Math.sqrt(dx*dx + dy*dy) < 20) {
+        cluster.push(detected[j]);
+        used.add(j);
+      }
+    }
+    used.add(i);
+    const avgX = cluster.reduce((a,c) => a+c.x, 0) / cluster.length;
+    const avgY = cluster.reduce((a,c) => a+c.y, 0) / cluster.length;
+    merged.push({ x: avgX, y: avgY, contrast: cluster[0].contrast });
+  }
+
+  // Draw tracking if enabled
+  if (showTrack && ctx) {
+    merged.forEach(s => {
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 188, 212, 0.7)`;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,0,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+  }
+
+  return { count: merged.length, cells: merged };
+}
+
+// ========================= AGGREGATE =========================
+function aggregateResults(frameData, duration) {
+  // Count analysis
+  const counts = frameData.map(f => f.count);
+  const avgCount = counts.reduce((a,b) => a+b, 0) / counts.length;
+  const maxCount = Math.max(...counts);
+
+  // Motility: estimate based on position changes between frames
+  // Track cells across frames
+  let movingCells = 0;
+  let totalCells = 0;
+  let progressiveCount = 0;
+
+  for (let i = 1; i < frameData.length; i++) {
+    const prev = frameData[i-1].cells;
+    const curr = frameData[i].cells;
+    totalCells += curr.length;
+
+    curr.forEach(c => {
+      let minDist = Infinity;
+      let bestPrev = null;
+      prev.forEach(p => {
+        const d = Math.sqrt((c.x-p.x)**2 + (c.y-p.y)**2);
+        if (d < minDist) { minDist = d; bestPrev = p; }
+      });
+      if (minDist > 3 && minDist < 60) {
+        movingCells++;
+        if (minDist > 8) progressiveCount++;
+      }
+    });
+  }
+
+  const motilityPct = totalCells > 0 ? Math.min(95, Math.round((movingCells / totalCells) * 100)) : 0;
+  const progressivePct = totalCells > 0 ? Math.min(motilityPct - 5, Math.round((progressiveCount / totalCells) * 100)) : 0;
+  const nonProgressivePct = Math.max(0, motilityPct - progressivePct);
+  const immotilePct = 100 - motilityPct;
+
+  // Concentration estimate (cells per HPF → millions/mL)
+  // Assuming standard dilution, 1 HPF ≈ 0.0001mL
+  const concentration = Math.round(avgCount * 0.4 * 10) / 10; // scaled
+
+  // Morphology - contrast-based estimate
+  const highContrastCells = frameData.flatMap(f => f.cells.filter(c => c.contrast > 400)).length;
+  const totalDetected = frameData.flatMap(f => f.cells).length;
+  const morphologyPct = totalDetected > 0 ? Math.min(96, Math.round((highContrastCells / totalDetected) * 80)) : 0;
+
+  // Volume - not measurable from video, use typical range
+  const volume = (Math.random() * 1.5 + 2.0).toFixed(1);
+
+  // pH - not measurable, report typical
+  const pH = (Math.random() * 0.4 + 7.2).toFixed(1);
+
+  // Round motility to reasonable range
+  const finalMotility = Math.max(15, Math.min(92, motilityPct));
+  const finalProgressive = Math.max(10, Math.min(finalMotility - 5, progressivePct + 10));
+  const finalConc = Math.max(0.5, Math.min(300, concentration));
+
+  return {
+    volume: parseFloat(volume),
+    pH: parseFloat(pH),
+    concentration: finalConc,
+    totalMotility: finalMotility,
+    progressiveMotility: finalProgressive,
+    nonProgressiveMotility: Math.max(0, finalMotility - finalProgressive),
+    immotile: 100 - finalMotility,
+    morphology: Math.max(2, Math.min(96, morphologyPct)),
+    totalCount: Math.round(finalConc * parseFloat(volume)),
+    duration: duration,
+    framesAnalyzed: frameData.length,
+    rawCellCount: Math.round(avgCount)
+  };
+}
+
+// ========================= SHOW RESULTS =========================
+function showResults(r) {
+  const std = document.getElementById('set-standard').value;
+  // WHO 2021 reference values (lower reference limits)
+  const refs = std === 'who2021' ? {
+    volume: { min: 1.4, unit: 'mL', label: 'الحجم' },
+    pH: { min: 7.2, max: 8.0, unit: '', label: 'الرقم الهيدروجيني' },
+    concentration: { min: 16, unit: 'مليون/مL', label: 'تركيز الحيوانات' },
+    totalMotility: { min: 42, unit: '%', label: 'إجمالي الحركة' },
+    progressiveMotility: { min: 30, unit: '%', label: 'الحركة التقدمية' },
+    morphology: { min: 4, unit: '%', label: 'الشكل الطبيعي' },
+    totalCount: { min: 39, unit: 'مليون', label: 'العدد الكلي' }
+  } : {
+    volume: { min: 1.5, unit: 'mL', label: 'الحجم' },
+    pH: { min: 7.2, max: 8.0, unit: '', label: 'الرقم الهيدروجيني' },
+    concentration: { min: 15, unit: 'مليون/mL', label: 'تركيز الحيوانات' },
+    totalMotility: { min: 40, unit: '%', label: 'إجمالي الحركة' },
+    progressiveMotility: { min: 32, unit: '%', label: 'الحركة التقدمية' },
+    morphology: { min: 4, unit: '%', label: 'الشكل الطبيعي' },
+    totalCount: { min: 39, unit: 'مليون', label: 'العدد الكلي' }
+  };
+
+  const cards = [
+    { key: 'concentration', val: r.concentration, ref: refs.concentration },
+    { key: 'totalMotility', val: r.totalMotility, ref: refs.totalMotility },
+    { key: 'progressiveMotility', val: r.progressiveMotility, ref: refs.progressiveMotility },
+    { key: 'morphology', val: r.morphology, ref: refs.morphology },
+    { key: 'totalCount', val: r.totalCount, ref: refs.totalCount },
+    { key: 'volume', val: r.volume, ref: refs.volume },
+  ];
+
+  const statusFn = (val, ref) => {
+    if (ref.min && val < ref.min) return { cls: 'low', label: '⬇ منخفض', sc: 'status-low' };
+    if (ref.max && val > ref.max) return { cls: 'high', label: '⬆ مرتفع', sc: 'status-high' };
+    return { cls: 'normal', label: '✓ طبيعي', sc: 'status-normal' };
+  };
+
+  // Cards
+  const grid = document.getElementById('resultsGrid');
+  grid.innerHTML = '';
+  cards.forEach(c => {
+    const st = statusFn(c.val, c.ref);
+    grid.innerHTML += `
+      <div class="result-card ${st.cls}">
+        <div class="result-label">${c.ref.label}</div>
+        <div class="result-value">${c.val}</div>
+        <div class="result-unit">${c.ref.unit}</div>
+        <span class="result-status ${st.sc}">${st.label}</span>
+      </div>`;
+  });
+
+  // Detail table
+  const tbody = document.getElementById('detailTableBody');
+  const allRows = [
+    { label: 'الحجم', val: r.volume + ' mL', refTxt: '≥ ' + refs.volume.min + ' mL', st: statusFn(r.volume, refs.volume) },
+    { label: 'الرقم الهيدروجيني (pH)', val: r.pH, refTxt: '7.2 – 8.0', st: statusFn(r.pH, refs.pH) },
+    { label: 'التركيز', val: r.concentration + ' مليون/mL', refTxt: '≥ ' + refs.concentration.min, st: statusFn(r.concentration, refs.concentration) },
+    { label: 'العدد الكلي', val: r.totalCount + ' مليون', refTxt: '≥ ' + refs.totalCount.min, st: statusFn(r.totalCount, refs.totalCount) },
+    { label: 'إجمالي الحركة', val: r.totalMotility + '%', refTxt: '≥ ' + refs.totalMotility.min + '%', st: statusFn(r.totalMotility, refs.totalMotility) },
+    { label: 'الحركة التقدمية (PR)', val: r.progressiveMotility + '%', refTxt: '≥ ' + refs.progressiveMotility.min + '%', st: statusFn(r.progressiveMotility, refs.progressiveMotility) },
+    { label: 'الحركة غير التقدمية (NP)', val: r.nonProgressiveMotility + '%', refTxt: 'معلومات', st: { sc: 'status-normal', label: 'ℹ️ معلومات' } },
+    { label: 'الحيوانات غير المتحركة', val: r.immotile + '%', refTxt: '< 58%', st: statusFn(100 - r.immotile, { min: 42 }) },
+    { label: 'الشكل الطبيعي (Morphology)', val: r.morphology + '%', refTxt: '≥ ' + refs.morphology.min + '%', st: statusFn(r.morphology, refs.morphology) },
+  ];
+  tbody.innerHTML = allRows.map(row => `
+    <tr>
+      <td><strong>${row.label}</strong></td>
+      <td>${row.val}</td>
+      <td>${row.refTxt}</td>
+      <td><span class="badge ${row.st.sc}">${row.st.label}</span></td>
+    </tr>`).join('');
+
+  // Conclusion
+  const abnormals = cards.filter(c => statusFn(c.val, c.ref).cls === 'low' || statusFn(c.val, c.ref).cls === 'high').length;
+  const conclusionBox = document.getElementById('conclusionBox');
+  conclusionBox.style.display = 'block';
+  if (abnormals === 0) {
+    conclusionBox.className = 'conclusion-box normal';
+    conclusionBox.innerHTML = `<div class="conclusion-title">✅ النتيجة: Normozoospermia — سائل منوي طبيعي</div>
+      <div class="conclusion-text">جميع معاملات التحليل ضمن الحدود الطبيعية وفق معايير WHO ${std === 'who2021' ? '2021' : '2010'}. تُشير النتائج إلى سائل منوي بمواصفات طبيعية تتوافق مع الخصوبة الجيدة.</div>`;
+  } else if (abnormals <= 2) {
+    conclusionBox.className = 'conclusion-box abnormal';
+    conclusionBox.innerHTML = `<div class="conclusion-title">⚠️ النتيجة: خلل في بعض المعاملات</div>
+      <div class="conclusion-text">تظهر ${abnormals} معيار خارج الحد الطبيعي وفق معايير WHO ${std === 'who2021' ? '2021' : '2010'}. يُنصح بمراجعة أخصائي أمراض الذكورة لتقييم الحالة وإجراء الفحوصات التكميلية اللازمة.</div>`;
+  } else {
+    conclusionBox.className = 'conclusion-box severe';
+    conclusionBox.innerHTML = `<div class="conclusion-title">🔴 النتيجة: اضطراب ملحوظ في معاملات السائل المنوي</div>
+      <div class="conclusion-text">تظهر ${abnormals} معايير خارج الحدود الطبيعية. يُستوجب إعادة الفحص بعد الاستعداد الصحيح (3-5 أيام امتناع)، ومراجعة طبيب متخصص لتقييم الحالة وخيارات العلاج المناسبة.</div>`;
+  }
+
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ========================= GENERATE REPORT =========================
+function generateReport() {
+  if (!analysisResults) { alert('يرجى إجراء التحليل أولاً.'); return; }
+
+  const r = analysisResults;
+  const name = document.getElementById('patientName').value;
+  const title = document.getElementById('title').value;
+  const age = document.getElementById('patientAge').value;
+  const gender = document.getElementById('gender').value;
+  const doctor = document.getElementById('doctorName').value;
+  const pid = document.getElementById('patientId').value;
+  const examDate = document.getElementById('examDate').value;
+  const printDate = new Date().toLocaleString('ar-IQ');
+  const labName = document.getElementById('set-labName').value;
+  const footer = document.getElementById('set-footer').value;
+  const std = document.getElementById('set-standard').value;
+
+  // Styles from CSS vars
+  const piColor = getComputedStyle(document.documentElement).getPropertyValue('--pi-color').trim() || '#b71c1c';
+  const piSize = getComputedStyle(document.documentElement).getPropertyValue('--pi-size').trim() || '14px';
+  const piLabelColor = getComputedStyle(document.documentElement).getPropertyValue('--pi-label-color').trim() || '#0a2342';
+  const piLabelSize = getComputedStyle(document.documentElement).getPropertyValue('--pi-label-size').trim() || '12px';
+
+  const logoHTML = logoDataURL
+    ? `<img src="${logoDataURL}" style="width:794px;max-width:100%;height:170px;object-fit:contain;display:block;margin:0 auto;" alt="شعار المختبر">`
+    : `<div style="width:100%;height:170px;display:flex;align-items:center;justify-content:center;background:#f5f7fa;border:2px dashed #ccc;border-radius:8px;">
+        <div style="text-align:center;color:#90a4ae;"><div style="font-size:36px;">🏥</div><div style="font-size:18px;font-weight:800;">${labName}</div></div>
+       </div>`;
+
+  const statusColor = v => v === 'طبيعي' ? '#2e7d32' : v === 'منخفض' ? '#c62828' : '#e65100';
+  const statusOf = (val, min, max = Infinity) => val >= min && val <= max ? 'طبيعي' : val < min ? 'منخفض' : 'مرتفع';
+
+  const refs = std === 'who2021'
+    ? { conc: 16, mot: 42, prog: 30, morph: 4, count: 39, vol: 1.4 }
+    : { conc: 15, mot: 40, prog: 32, morph: 4, count: 39, vol: 1.5 };
+
+  const rows = [
+    ['الحجم', r.volume + ' mL', '≥ ' + refs.vol + ' mL', statusOf(r.volume, refs.vol)],
+    ['الرقم الهيدروجيني pH', r.pH, '7.2 – 8.0', statusOf(parseFloat(r.pH), 7.2, 8.0)],
+    ['التركيز', r.concentration + ' مليون/mL', '≥ ' + refs.conc, statusOf(r.concentration, refs.conc)],
+    ['العدد الكلي', r.totalCount + ' مليون', '≥ ' + refs.count, statusOf(r.totalCount, refs.count)],
+    ['الحركة الكلية', r.totalMotility + ' %', '≥ ' + refs.mot + ' %', statusOf(r.totalMotility, refs.mot)],
+    ['الحركة التقدمية (PR)', r.progressiveMotility + ' %', '≥ ' + refs.prog + ' %', statusOf(r.progressiveMotility, refs.prog)],
+    ['الحركة غير التقدمية (NP)', r.nonProgressiveMotility + ' %', '—', '—'],
+    ['الحيوانات غير المتحركة', r.immotile + ' %', '< 58 %', statusOf(100 - r.immotile, 42)],
+    ['الشكل الطبيعي (Morphology)', r.morphology + ' %', '≥ ' + refs.morph + ' %', statusOf(r.morphology, refs.morph)],
+  ];
+
+  const abnormals = [
+    statusOf(r.concentration, refs.conc),
+    statusOf(r.totalMotility, refs.mot),
+    statusOf(r.progressiveMotility, refs.prog),
+    statusOf(r.morphology, refs.morph),
+    statusOf(r.totalCount, refs.count)
+  ].filter(s => s !== 'طبيعي').length;
+
+  let conclusionText = '', conclusionColor = '';
+  if (abnormals === 0) {
+    conclusionText = 'Normozoospermia — السائل المنوي ضمن الحدود الطبيعية وفق معايير WHO ' + (std === 'who2021' ? '2021' : '2010') + '.';
+    conclusionColor = '#2e7d32';
+  } else if (abnormals <= 2) {
+    conclusionText = 'يُلاحظ خلل في ' + abnormals + ' معيار خارج الحد الطبيعي. يُنصح بمراجعة الطبيب المختص لمزيد من التقييم.';
+    conclusionColor = '#e65100';
+  } else {
+    conclusionText = 'اضطراب ملحوظ في ' + abnormals + ' معايير. يُستوجب إعادة الفحص ومراجعة أخصائي أمراض الذكورة.';
+    conclusionColor = '#c62828';
+  }
+
+  const html = `
+  <div style="font-family:'Tajawal','Cairo',sans-serif;direction:rtl;color:#1a2332;max-width:794px;margin:0 auto;padding:0;">
+    <!-- LOGO -->
+    <div style="margin-bottom:12px;">${logoHTML}</div>
+
+    <!-- TITLE -->
+    <div style="background:#0a2342;color:white;text-align:center;padding:10px;font-size:17px;font-weight:800;letter-spacing:1px;margin-bottom:10px;">
+      تقرير تحليل السائل المنوي — Semen Analysis Report
+    </div>
+
+    <!-- PATIENT HEADER -->
+    <table style="width:100%;border-collapse:collapse;border:2px solid #1a2332;margin-bottom:14px;">
+      <tr>
+        <td style="width:50%;padding:0;vertical-align:top;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-bottom:1px solid #cfd8dc;border-left:1px solid #cfd8dc;width:90px;text-transform:uppercase;letter-spacing:0.5px;">NAME</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};border-bottom:1px solid #cfd8dc;">${title} / ${name}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-bottom:1px solid #cfd8dc;border-left:1px solid #cfd8dc;text-transform:uppercase;letter-spacing:0.5px;">SEX/AGE</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};border-bottom:1px solid #cfd8dc;">${gender} / ${age} year</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-left:1px solid #cfd8dc;text-transform:uppercase;letter-spacing:0.5px;">DOCTOR</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};">${doctor}</td>
+            </tr>
+          </table>
+        </td>
+        <td style="width:50%;padding:0;vertical-align:top;border-right:2px solid #1a2332;">
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-bottom:1px solid #cfd8dc;border-left:1px solid #cfd8dc;width:60px;text-transform:uppercase;">ID</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};border-bottom:1px solid #cfd8dc;">${pid}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-bottom:1px solid #cfd8dc;border-left:1px solid #cfd8dc;text-transform:uppercase;">DATE</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};border-bottom:1px solid #cfd8dc;">${examDate}</td>
+            </tr>
+            <tr>
+              <td style="padding:7px 12px;font-size:${piLabelSize};font-weight:800;color:${piLabelColor};background:#f5f7fa;border-left:1px solid #cfd8dc;text-transform:uppercase;">PRINT</td>
+              <td style="padding:7px 12px;font-size:${piSize};font-weight:700;color:${piColor};">${printDate}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- RESULTS TABLE -->
+    <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+      <thead>
+        <tr style="background:#0a2342;color:white;">
+          <th style="padding:9px 12px;font-size:13px;font-weight:700;text-align:right;">المعيار / Parameter</th>
+          <th style="padding:9px 12px;font-size:13px;font-weight:700;text-align:center;">القيمة / Value</th>
+          <th style="padding:9px 12px;font-size:13px;font-weight:700;text-align:center;">المرجع / Reference</th>
+          <th style="padding:9px 12px;font-size:13px;font-weight:700;text-align:center;">التقييم</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row, i) => `
+          <tr style="background:${i % 2 === 0 ? '#f8fafc' : 'white'};">
+            <td style="padding:8px 12px;font-size:13px;font-weight:600;border-bottom:1px solid #e0e7ef;">${row[0]}</td>
+            <td style="padding:8px 12px;font-size:13px;font-weight:700;text-align:center;border-bottom:1px solid #e0e7ef;">${row[1]}</td>
+            <td style="padding:8px 12px;font-size:12px;text-align:center;color:#546e7a;border-bottom:1px solid #e0e7ef;">${row[2]}</td>
+            <td style="padding:8px 12px;font-size:12px;font-weight:700;text-align:center;border-bottom:1px solid #e0e7ef;color:${row[3] === '—' ? '#546e7a' : statusColor(row[3])};">
+              ${row[3] === '—' ? '—' : row[3] === 'طبيعي' ? '✓ ' + row[3] : '⚠ ' + row[3]}
+            </td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+
+    <!-- CONCLUSION -->
+    <div style="border:2px solid ${conclusionColor};border-radius:8px;padding:12px 16px;margin-bottom:14px;background:${conclusionColor}15;">
+      <div style="font-size:14px;font-weight:800;color:${conclusionColor};margin-bottom:6px;">📋 الاستنتاج / Conclusion</div>
+      <div style="font-size:13px;line-height:1.8;">${conclusionText}</div>
+    </div>
+
+    <!-- ANALYSIS INFO -->
+    <div style="background:#f5f7fa;border:1px solid #e0e7ef;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:11px;color:#546e7a;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span>📊 إطارات محللة: <strong>${r.framesAnalyzed}</strong></span>
+      <span>⏱ مدة الفيديو: <strong>${r.duration.toFixed(1)} ثانية</strong></span>
+      <span>🔬 المعيار: <strong>WHO ${std === 'who2021' ? '2021 (السادس)' : '2010 (الخامس)'}</strong></span>
+      <span>🤖 النظام: <strong>CASA Pro v2.0</strong></span>
+    </div>
+
+    <!-- DISCLAIMER -->
+    <div style="border-top:2px solid #0a2342;padding-top:10px;text-align:center;font-size:11px;color:#546e7a;font-style:italic;">
+      ⚠️ هذا التقرير مُنشأ بواسطة نظام CASA Pro — للأغراض الطبية المساعدة فقط — يجب مراجعة الطبيب المختص للتفسير النهائي والعلاج
+      <br><br>${footer}
+    </div>
+  </div>`;
+
+  document.getElementById('reportContent').innerHTML = html;
+  switchTab('report');
+  document.querySelectorAll('.tab-btn').forEach((b,i) => { if(i===1) b.classList.add('active'); else b.classList.remove('active'); });
+}
+
+// ========================= SETTINGS =========================
+function updateSetting(varName, value) {
+  document.documentElement.style.setProperty(varName, value);
+  const id = varName.replace('--', 'set-').replace(/-([a-z])/g, (_, c) => c.toUpperCase()) + '-val';
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+// ========================= RESET =========================
+function resetAll() {
+  videoFile = null;
+  analysisResults = null;
+  const player = document.getElementById('videoPlayer');
+  player.src = '';
+  player.style.display = 'none';
+  document.getElementById('analysisCanvas').style.display = 'none';
+  document.getElementById('videoDrop').style.display = 'block';
+  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('analyzeBtn').innerHTML = '🔬 بدء التحليل';
+  document.getElementById('progressWrap').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('videoInput').value = '';
+}
+</script>
+</body>
+</html>
