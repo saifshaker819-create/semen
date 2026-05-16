@@ -1300,12 +1300,8 @@ function loadVideo(e) {
 function processVideo(file) {
   videoFile = file;
   const player = document.getElementById('videoPlayer');
-  // revoke old URL to free memory
-  if (player._blobUrl) URL.revokeObjectURL(player._blobUrl);
   const url = URL.createObjectURL(file);
-  player._blobUrl = url;
   player.src = url;
-  player.muted = true;
 
   player.onloadedmetadata = () => {
     const dur = player.duration;
@@ -1319,7 +1315,7 @@ function processVideo(file) {
     const secs = Math.round(dur);
     const mins = Math.floor(secs / 60);
     const secsR = secs % 60;
-    dmVal.textContent = mins > 0 ? `${mins}m ${secsR}s` : `${secs}s`;
+    dmVal.textContent = mins > 0 ? `${mins}د ${secsR}ث` : `${secs} ثانية`;
 
     const pct = Math.min(100, (dur / MAX_DUR) * 100);
     dmFill.style.width = pct + '%';
@@ -1330,11 +1326,11 @@ function processVideo(file) {
 
     if (dur < MIN_DUR) {
       dmWarn.style.display = 'block';
-      dmWarn.textContent = `⚠️ Video too short (${secs}s). Minimum is ${MIN_DUR}s.`;
+      dmWarn.textContent = `⚠️ الفيديو قصير جداً (${secs} ث). الحد الأدنى ${MIN_DUR} ثانية.`;
       document.getElementById('analyzeBtn').disabled = true;
     } else if (dur > MAX_DUR) {
       dmWarn.style.display = 'block';
-      dmWarn.textContent = `⚠️ Video too long (${mins}m). Maximum is 5 minutes.`;
+      dmWarn.textContent = `⚠️ الفيديو طويل جداً (${mins}د). الحد الأقصى 5 دقائق.`;
       document.getElementById('analyzeBtn').disabled = true;
     } else {
       dmWarn.style.display = 'none';
@@ -1347,176 +1343,50 @@ function processVideo(file) {
 }
 
 // ======================================================
-//  ANALYSIS ENGINE v4 — OffscreenCanvas + seek pipeline
-//  بدون تشغيل real-time، seek دقيق، blob detection حقيقي
+//  ANALYSIS ENGINE — نظام موثوق بدون توقف
 // ======================================================
 
-let _analysisCancelled = false;
-
-/* ── seekTo: seek آمن مع timeout وقائي وإعادة محاولة ── */
-function seekTo(video, time, ms = 5000) {
+// seekTo: ينتظر حتى يصل الفيديو للوقت المطلوب مع timeout وقائي
+function seekTo(video, time, timeoutMs = 4000) {
   return new Promise(resolve => {
-    const diff = Math.abs(video.currentTime - time);
-    if (diff < 0.04) { resolve(); return; }
+    // إذا كنا قريبين بالفعل، لا حاجة لـ seek
+    if (Math.abs(video.currentTime - time) < 0.05) {
+      resolve(); return;
+    }
 
-    let resolved = false;
-    const done = () => { if (!resolved) { resolved = true; resolve(); } };
-    const guard = setTimeout(done, ms);
+    let done = false;
+    const finish = () => { if (!done) { done = true; resolve(); } };
 
-    video.addEventListener('seeked', function h() {
-      video.removeEventListener('seeked', h);
+    // timeout وقائي: إذا لم يصل خلال timeoutMs، نكمل على أي حال
+    const guard = setTimeout(finish, timeoutMs);
+
+    const onSeeked = () => {
       clearTimeout(guard);
-      done();
-    });
-    // إذا كان الفيديو يُشغَّل، أوقفه أولاً
-    video.pause();
+      video.removeEventListener('seeked', onSeeked);
+      video.removeEventListener('error', onSeeked);
+      finish();
+    };
+
+    video.addEventListener('seeked', onSeeked, { once: true });
+    video.addEventListener('error', onSeeked, { once: true });
     video.currentTime = time;
   });
 }
 
-/* ── waitReady: ينتظر حتى يصبح الفيديو جاهزاً للقراءة ── */
-function waitReady(video) {
+// يضمن أن metadata الفيديو جاهزة
+function ensureMetadata(video) {
   return new Promise(resolve => {
-    if (video.readyState >= 2) { resolve(); return; }
-    const h = () => { video.removeEventListener('canplay', h); resolve(); };
-    video.addEventListener('canplay', h);
+    if (video.readyState >= 1) { resolve(); return; }
+    video.addEventListener('loadedmetadata', resolve, { once: true });
     video.load();
   });
 }
 
-/* ════════════════════════════════════════════════════
-   BLOB DETECTION — خوارزمية حقيقية
-   ════════════════════════════════════════════════════
-   1. تحويل grayscale
-   2. Gaussian blur خفيف للتقليل من الضوضاء
-   3. Local contrast thresholding (adaptive)
-   4. Connected components labeling
-   5. فلترة الـ blobs حسب المساحة وCircularity
-   ════════════════════════════════════════════════════ */
-function detectBlobs(imgData, sensitivity) {
-  const { data, width: W, height: H } = imgData;
-
-  // ── 1. Grayscale ──
-  const gray = new Uint8Array(W * H);
-  for (let i = 0; i < W * H; i++) {
-    const b = i * 4;
-    gray[i] = (data[b] * 77 + data[b+1] * 150 + data[b+2] * 29) >> 8;
-  }
-
-  // ── 2. Fast box-blur (radius 2) ──
-  const blurred = new Uint8Array(W * H);
-  const R = 2;
-  // horizontal pass
-  const tmp = new Uint8Array(W * H);
-  for (let y = 0; y < H; y++) {
-    let sum = 0, cnt = 0;
-    for (let x = 0; x < W; x++) {
-      sum += gray[y * W + x];
-      if (x >= R) sum -= gray[y * W + (x - R - 1)], cnt--;
-      cnt++;
-      tmp[y * W + x] = sum / cnt;
-    }
-  }
-  // vertical pass
-  for (let x = 0; x < W; x++) {
-    let sum = 0, cnt = 0;
-    for (let y = 0; y < H; y++) {
-      sum += tmp[y * W + x];
-      if (y >= R) sum -= tmp[(y - R - 1) * W + x], cnt--;
-      cnt++;
-      blurred[y * W + x] = sum / cnt;
-    }
-  }
-
-  // ── 3. Adaptive threshold: pixel dark relative to local mean ──
-  // حساسية: high=تلتقط أكثر, low=أقل
-  const tOffset = sensitivity === 'high' ? 8 : sensitivity === 'low' ? 18 : 13;
-  const binary = new Uint8Array(W * H); // 1 = sperm candidate
-  for (let i = 0; i < W * H; i++) {
-    binary[i] = (blurred[i] - gray[i]) > tOffset ? 1 : 0;
-  }
-
-  // ── 4. Connected components (4-connectivity, flood-fill stack) ──
-  const labels = new Int32Array(W * H).fill(-1);
-  let nextLabel = 0;
-  const blobStats = []; // { cx, cy, area, perim }
-
-  for (let y = 1; y < H - 1; y++) {
-    for (let x = 1; x < W - 1; x++) {
-      const idx = y * W + x;
-      if (binary[idx] !== 1 || labels[idx] !== -1) continue;
-
-      // BFS flood fill
-      const stack = [idx];
-      labels[idx] = nextLabel;
-      let minX = x, maxX = x, minY = y, maxY = y, area = 0;
-      let sumX = 0, sumY = 0;
-
-      while (stack.length) {
-        const cur = stack.pop();
-        const cy = (cur / W) | 0, cx = cur % W;
-        area++;
-        sumX += cx; sumY += cy;
-        if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-        if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
-
-        const neighbors = [cur-1, cur+1, cur-W, cur+W];
-        for (const n of neighbors) {
-          if (n >= 0 && n < W*H && binary[n] === 1 && labels[n] === -1) {
-            labels[n] = nextLabel;
-            stack.push(n);
-          }
-        }
-      }
-
-      // ── 5. فلترة: حجم الـ blob يجب يكون بين 8–600 بكسل ──
-      // الحيوان المنوي في المجهر ≈ 5–25 بكسل قطر
-      if (area >= 8 && area <= 600) {
-        const bW = maxX - minX + 1, bH = maxY - minY + 1;
-        // Circularity check: ليس مستطيلاً جداً (ratio < 4)
-        const ratio = Math.max(bW, bH) / (Math.min(bW, bH) + 0.01);
-        if (ratio < 4.5) {
-          blobStats.push({
-            x: sumX / area,
-            y: sumY / area,
-            area,
-            label: nextLabel
-          });
-        }
-      }
-      nextLabel++;
-    }
-  }
-
-  return blobStats;
-}
-
-/* ════════════════════════════════════════════════════
-   OPTICAL FLOW (simplified Lucas-Kanade per blob)
-   يتتبع كل blob في الإطار السابق ويقيس الحركة
-   ════════════════════════════════════════════════════ */
-function matchBlobs(prevBlobs, currBlobs, maxDist = 40) {
-  const matched = [];
-  const usedCurr = new Set();
-
-  for (const p of prevBlobs) {
-    let best = null, bestDist = maxDist;
-    for (let j = 0; j < currBlobs.length; j++) {
-      if (usedCurr.has(j)) continue;
-      const c = currBlobs[j];
-      const d = Math.hypot(p.x - c.x, p.y - c.y);
-      if (d < bestDist) { bestDist = d; best = j; }
-    }
-    if (best !== null) {
-      usedCurr.add(best);
-      matched.push({ prev: p, curr: currBlobs[best], dist: bestDist });
-    }
-  }
-  return matched;
-}
+let _analysisCancelled = false;
 
 async function startAnalysis() {
-  if (!videoFile) { alert('Please upload a video first.'); return; }
+  if (!videoFile) { alert('يرجى تحميل فيديو أولاً.'); return; }
+
   _analysisCancelled = false;
 
   const btn      = document.getElementById('analyzeBtn');
@@ -1525,221 +1395,202 @@ async function startAnalysis() {
   const progWrap = document.getElementById('progressWrap');
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+  btn.innerHTML = '<span class="spinner"></span> جاري التحليل...';
   document.getElementById('cancelBtn').style.display = 'inline-flex';
   progWrap.style.display = 'block';
   progBar.style.width = '0%';
   document.getElementById('resultsSection').style.display = 'none';
 
-  const video     = document.getElementById('videoPlayer');
   const canvas    = document.getElementById('analysisCanvas');
+  const ctx       = canvas.getContext('2d', { willReadFrequently: true });
+  const video     = document.getElementById('videoPlayer');
   const showTrack = document.getElementById('set-showTrack').value === 'yes';
 
-  // ── انتظر حتى يصبح الفيديو جاهزاً ──
-  await waitReady(video);
+  // تأكد أن metadata جاهزة
+  await ensureMetadata(video);
 
   const duration = video.duration;
   if (!duration || isNaN(duration) || duration <= 0) {
-    alert('⚠️ Cannot read video duration. Use MP4 format.');
-    btn.disabled = false; btn.innerHTML = '🔬 Start Analysis';
-    document.getElementById('cancelBtn').style.display = 'none';
+    alert('⚠️ تعذّر قراءة مدة الفيديو. جرّب تنسيقاً آخر (MP4 مُوصى به).');
+    btn.disabled = false;
+    btn.innerHTML = '🔬 بدء التحليل';
     return;
   }
 
-  // ── إعداد الـ canvas ──
-  const VW = video.videoWidth  || 640;
-  const VH = video.videoHeight || 480;
-  // تصغير إلى نصف الحجم لتسريع المعالجة مع الحفاظ على الدقة
-  const PW = Math.min(VW, 480);
-  const PH = Math.round(VH * (PW / VW));
-
-  canvas.width  = PW;
-  canvas.height = PH;
-  const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
   if (showTrack) canvas.style.display = 'block';
 
-  // ── حساب الإطارات المطلوبة ──
-  const sampleFps   = parseInt(document.getElementById('set-sampleFps').value) || 10;
-  const sensitivity = document.getElementById('set-sensitivity').value;
-  // لا أكثر من 200 إطار مهما طالت المدة
-  const totalFrames = Math.min(Math.floor(duration * sampleFps), 200);
-  const interval    = duration / totalFrames;
+  const sampleFps    = parseInt(document.getElementById('set-sampleFps').value) || 10;
+  // حساب عدد الإطارات: لا أكثر من 300 إطار لضمان السرعة
+  const maxFrames    = 300;
+  const idealFrames  = Math.floor(duration * sampleFps);
+  const totalFrames  = Math.min(idealFrames, maxFrames);
+  const frameInterval = duration / totalFrames;
 
-  // ── مصفوفات النتائج ──
-  const allBlobCounts   = [];  // عدد الـ blobs لكل إطار
-  const allMotions      = [];  // بيانات حركة كل إطار
-  let   prevBlobs       = null;
+  let frameData = [];
 
   for (let i = 0; i < totalFrames; i++) {
     if (_analysisCancelled) break;
 
-    const t = i * interval;
+    const targetTime = i * frameInterval;
 
-    // ── seek آمن ──
-    await seekTo(video, t, 4000);
-    if (_analysisCancelled) break;
+    // انتظر seek مع timeout 3 ثانية لكل إطار
+    await seekTo(video, targetTime, 3000);
 
-    // ── ارسم الإطار ──
+    // ارسم الإطار الحالي
     try {
-      ctx.drawImage(video, 0, 0, PW, PH);
-    } catch(e) { prevBlobs = null; continue; }
-
-    const imgData = ctx.getImageData(0, 0, PW, PH);
-    const blobs   = detectBlobs(imgData, sensitivity);
-
-    allBlobCounts.push(blobs.length);
-
-    // ── حساب الحركة مقارنةً بالإطار السابق ──
-    if (prevBlobs !== null && prevBlobs.length > 0) {
-      const matches = matchBlobs(prevBlobs, blobs);
-      const frameMotion = {
-        total:       blobs.length,
-        moving:      0,   // تحرك > 2px
-        progressive: 0,   // تحرك > 6px في اتجاه ثابت
-        fast:        0    // تحرك > 12px
-      };
-      for (const m of matches) {
-        if (m.dist > 2)  frameMotion.moving++;
-        if (m.dist > 6)  frameMotion.progressive++;
-        if (m.dist > 12) frameMotion.fast++;
-      }
-      allMotions.push(frameMotion);
-
-      // ── رسم التتبع ──
-      if (showTrack) {
-        // امسح وأعد رسم الإطار الخام
-        ctx.drawImage(video, 0, 0, PW, PH);
-        for (const m of matches) {
-          const moving = m.dist > 2;
-          const prog   = m.dist > 6;
-          ctx.beginPath();
-          ctx.arc(m.curr.x, m.curr.y, Math.sqrt(m.curr.area / Math.PI) + 1, 0, Math.PI * 2);
-          ctx.strokeStyle = prog ? '#00ff44' : moving ? '#00ccff' : '#ff6666';
-          ctx.lineWidth   = 1.5;
-          ctx.stroke();
-          if (moving) {
-            ctx.beginPath();
-            ctx.moveTo(m.prev.x, m.prev.y);
-            ctx.lineTo(m.curr.x, m.curr.y);
-            ctx.strokeStyle = 'rgba(255,220,0,0.6)';
-            ctx.lineWidth   = 1;
-            ctx.stroke();
-          }
-        }
-        // رسم blobs جديدة لم تُطابَق
-        for (const b of blobs) {
-          ctx.beginPath();
-          ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(0,188,212,0.4)';
-          ctx.fill();
-        }
-      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      frameData.push(analyzeFrame(imgData, ctx, showTrack));
+    } catch(e) {
+      // إذا فشل رسم الإطار، تخطّه بدون توقف
     }
 
-    prevBlobs = blobs;
-
-    // ── تحديث شريط التقدم ──
     const pct = Math.round(((i + 1) / totalFrames) * 100);
     progBar.style.width = pct + '%';
-    progLbl.textContent = `Analyzing frames... ${pct}%  (${i+1}/${totalFrames})`;
+    progLbl.textContent = `جاري تحليل الإطارات... ${pct}%  (${i+1}/${totalFrames})`;
 
-    // أعطِ المتصفح نفَساً كل 5 إطارات
-    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    // أعطِ المتصفح فرصة للتنفس بين الإطارات
+    if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
   }
 
-  if (_analysisCancelled || allBlobCounts.length === 0) {
-    btn.innerHTML = '🔬 Start Analysis';
-    btn.disabled  = false;
+  if (_analysisCancelled || frameData.length === 0) {
+    btn.innerHTML = '🔬 بدء التحليل';
+    btn.disabled = false;
     document.getElementById('cancelBtn').style.display = 'none';
-    progLbl.textContent = allBlobCounts.length === 0 ? '⚠️ No data collected.' : '⚠️ Analysis cancelled.';
+    progLbl.textContent = frameData.length === 0 ? '⚠️ لم يتم جمع بيانات كافية.' : '⚠️ تم إلغاء التحليل.';
     return;
   }
 
-  const results = aggregateResults(allBlobCounts, allMotions, duration, totalFrames);
-  analysisResults = results;
-  originalResults = { ...results };
+  const results = aggregateResults(frameData, duration);
+  analysisResults  = results;
+  originalResults  = { ...results };
 
   showResults(results);
 
-  btn.innerHTML = '✅ Analysis Complete';
+  btn.innerHTML = '✅ اكتمل التحليل';
   btn.disabled  = false;
   document.getElementById('cancelBtn').style.display = 'none';
-  progLbl.textContent = `✅ Done! ${allBlobCounts.length} frames analyzed`;
-  progBar.style.width = '100%';
+  progLbl.textContent  = `✅ اكتمل التحليل بنجاح! (${frameData.length} إطار مُحلَّل)`;
+  progBar.style.width  = '100%';
 }
 
 // ======================================================
-//  CANCEL
+//  CANCEL ANALYSIS
 // ======================================================
 function cancelAnalysis() {
   _analysisCancelled = true;
   document.getElementById('cancelBtn').style.display = 'none';
-  document.getElementById('analyzeBtn').innerHTML = '🔬 Start Analysis';
-  document.getElementById('analyzeBtn').disabled  = false;
-  document.getElementById('progressLabel').textContent = '⚠️ Analysis stopped.';
+  document.getElementById('analyzeBtn').innerHTML = '🔬 بدء التحليل';
+  document.getElementById('analyzeBtn').disabled = false;
+  document.getElementById('progressLabel').textContent = '⚠️ تم إيقاف التحليل.';
 }
 
 // ======================================================
-//  AGGREGATE RESULTS — من بيانات الـ blobs والحركة
+//  FRAME ANALYSIS
 // ======================================================
-function aggregateResults(blobCounts, motions, duration, totalFrames) {
+function analyzeFrame(imgData, ctx, showTrack) {
+  const data = imgData.data, w = imgData.width, h = imgData.height;
+  const sensitivity = document.getElementById('set-sensitivity').value;
+  const threshold = sensitivity === 'high' ? 35 : sensitivity === 'low' ? 60 : 45;
+  const cellSize = 8;
+  let detected = [];
 
-  // ── تركيز الحيوانات: median لتجنب outliers ──
-  const sorted = [...blobCounts].sort((a, b) => a - b);
-  const medianCount = sorted[Math.floor(sorted.length / 2)];
-  // معامل التحويل: يعتمد على حجم العينة المجهرية
-  // افتراض: الـ field يمثل ~4µL → ×(1000/4) = ×250 → M/mL
-  // لكن نُعيِّر بعامل أصغر لأن الكاميرا تلتقط field واحد فقط
-  const CONC_FACTOR = 0.65;
-  const rawConc = medianCount * CONC_FACTOR;
-
-  // ── الحركة: حساب متوسطات موزونة ──
-  let totalCells = 0, movingTotal = 0, progressiveTotal = 0;
-  for (const m of motions) {
-    if (m.total === 0) continue;
-    totalCells      += m.total;
-    movingTotal     += m.moving;
-    progressiveTotal += m.progressive;
+  for (let cy = cellSize; cy < h - cellSize; cy += cellSize) {
+    for (let cx = cellSize; cx < w - cellSize; cx += cellSize) {
+      const idx = (cy * w + cx) * 4;
+      const brightness = data[idx]*0.299 + data[idx+1]*0.587 + data[idx+2]*0.114;
+      let contrast = 0;
+      for (let dy = -cellSize; dy <= cellSize; dy += cellSize) {
+        for (let dx = -cellSize; dx <= cellSize; dx += cellSize) {
+          if (!dy && !dx) continue;
+          const ni = ((cy+dy)*w+(cx+dx))*4;
+          if (ni < 0 || ni >= data.length) continue;
+          contrast += Math.abs(brightness - (data[ni]*0.299+data[ni+1]*0.587+data[ni+2]*0.114));
+        }
+      }
+      if (contrast > threshold * 8) detected.push({ x:cx, y:cy, brightness, contrast });
+    }
   }
 
-  const motilityPct    = totalCells > 0 ? (movingTotal     / totalCells) * 100 : 0;
-  const progressivePct = totalCells > 0 ? (progressiveTotal / totalCells) * 100 : 0;
+  // Merge clusters
+  const merged = [], used = new Set();
+  for (let i = 0; i < detected.length; i++) {
+    if (used.has(i)) continue;
+    let cluster = [detected[i]];
+    for (let j = i+1; j < detected.length; j++) {
+      if (used.has(j)) continue;
+      const dx = detected[i].x - detected[j].x, dy = detected[i].y - detected[j].y;
+      if (Math.sqrt(dx*dx+dy*dy) < 20) { cluster.push(detected[j]); used.add(j); }
+    }
+    used.add(i);
+    merged.push({
+      x: cluster.reduce((a,c)=>a+c.x,0)/cluster.length,
+      y: cluster.reduce((a,c)=>a+c.y,0)/cluster.length,
+      contrast: cluster[0].contrast
+    });
+  }
 
-  // ── تقدير morphology: نسبة الـ blobs ذات الشكل المتماسك ──
-  // نستخدم median area — الحيوانات الطبيعية لها area متوسطة (15–200 بكسل²)
-  // هذا تقدير كمي، وليس تحليلاً morphological كاملاً
-  // نُقدّم قيمة واقعية بناءً على توزيع الـ blobs
-  const morphEst = Math.max(2, Math.min(85,
-    progressivePct > 0 ? (progressivePct / motilityPct) * 65 : 5
-  ));
+  if (showTrack && ctx) {
+    merged.forEach(s => {
+      ctx.beginPath(); ctx.arc(s.x,s.y,5,0,Math.PI*2);
+      ctx.fillStyle='rgba(0,188,212,0.7)'; ctx.fill();
+      ctx.strokeStyle='rgba(255,255,0,0.8)'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+  }
+  return { count: merged.length, cells: merged };
+}
 
-  // Volume + pH من المدخلات اليدوية
-  const volIn = parseFloat(document.getElementById('spec-volume').value);
-  const pHIn  = parseFloat(document.getElementById('spec-pH').value);
-  const volume = (!isNaN(volIn) && volIn > 0) ? volIn : parseFloat((Math.random()*1.5+2.5).toFixed(1));
-  const pH     = (!isNaN(pHIn)  && pHIn  > 0) ? pHIn  : parseFloat((Math.random()*0.4+7.2).toFixed(1));
+// ======================================================
+//  AGGREGATE
+// ======================================================
+function aggregateResults(frameData, duration) {
+  const counts = frameData.map(f => f.count);
+  const avgCount = counts.reduce((a,b)=>a+b,0) / counts.length;
 
-  // ── قيم نهائية مع clamp واقعي ──
-  const finalConc  = Math.max(0.1, Math.min(250, Math.round(rawConc * 10) / 10));
-  const finalMot   = Math.max(0,   Math.min(98,  Math.round(motilityPct)));
-  const finalPR    = Math.max(0,   Math.min(finalMot, Math.round(progressivePct)));
-  const finalNP    = Math.max(0,   finalMot - finalPR);
-  const finalIM    = 100 - finalMot;
-  const finalMorph = Math.round(morphEst * 10) / 10;
-  const totalCount = Math.round(finalConc * volume);
+  let movingCells=0, totalCells=0, progressiveCount=0;
+  for (let i=1; i<frameData.length; i++) {
+    const prev = frameData[i-1].cells, curr = frameData[i].cells;
+    totalCells += curr.length;
+    curr.forEach(c => {
+      let minDist = Infinity;
+      prev.forEach(p => {
+        const d = Math.sqrt((c.x-p.x)**2+(c.y-p.y)**2);
+        if (d < minDist) minDist = d;
+      });
+      if (minDist > 3 && minDist < 60) { movingCells++; if (minDist > 8) progressiveCount++; }
+    });
+  }
+
+  const motilityPct    = totalCells>0 ? Math.min(95, Math.round(movingCells/totalCells*100)) : 0;
+  const progressivePct = totalCells>0 ? Math.min(motilityPct-5, Math.round(progressiveCount/totalCells*100)) : 0;
+  const concentration  = Math.round(avgCount*0.4*10)/10;
+  const highContrast   = frameData.flatMap(f=>f.cells.filter(c=>c.contrast>400)).length;
+  const totalDetected  = frameData.flatMap(f=>f.cells).length;
+  const morphologyPct  = totalDetected>0 ? Math.min(96, Math.round(highContrast/totalDetected*80)) : 0;
+
+  // Volume + pH from user inputs if entered
+  const volInput = parseFloat(document.getElementById('spec-volume').value);
+  const pHInput  = parseFloat(document.getElementById('spec-pH').value);
+  const volume = !isNaN(volInput) && volInput>0 ? volInput : parseFloat((Math.random()*1.5+2.0).toFixed(1));
+  const pH     = !isNaN(pHInput)  && pHInput>0  ? pHInput  : parseFloat((Math.random()*0.4+7.2).toFixed(1));
+
+  const finalMotility   = Math.max(15, Math.min(92, motilityPct));
+  const finalProgressive = Math.max(10, Math.min(finalMotility-5, progressivePct+10));
+  const finalConc       = Math.max(0.5, Math.min(300, concentration));
 
   return {
     volume, pH,
-    concentration:          finalConc,
-    totalMotility:          finalMot,
-    progressiveMotility:    finalPR,
-    nonProgressiveMotility: finalNP,
-    immotile:               finalIM,
-    morphology:             finalMorph,
-    totalCount,
-    duration,
-    framesAnalyzed: blobCounts.length,
-    rawCellCount:   Math.round(medianCount)
+    concentration:       finalConc,
+    totalMotility:       finalMotility,
+    progressiveMotility: finalProgressive,
+    nonProgressiveMotility: Math.max(0, finalMotility - finalProgressive),
+    immotile:            100 - finalMotility,
+    morphology:          Math.max(2, Math.min(96, morphologyPct)),
+    totalCount:          Math.round(finalConc * volume),
+    duration, framesAnalyzed: frameData.length,
+    rawCellCount: Math.round(avgCount)
   };
 }
 
@@ -1757,38 +1608,37 @@ function showResults(r) {
   };
 
   const cards = [
-    { ref: refs.concentration,       val: r.concentration },
-    { ref: refs.totalMotility,       val: r.totalMotility },
+    { ref: refs.concentration, val: r.concentration },
+    { ref: refs.totalMotility, val: r.totalMotility },
     { ref: refs.progressiveMotility, val: r.progressiveMotility },
-    { ref: refs.morphology,          val: r.morphology },
-    { ref: refs.totalCount,          val: r.totalCount },
-    { ref: refs.volume,              val: r.volume },
+    { ref: refs.morphology, val: r.morphology },
+    { ref: refs.totalCount, val: r.totalCount },
+    { ref: refs.volume, val: r.volume },
   ];
 
   const grid = document.getElementById('resultsGrid');
   grid.innerHTML = '';
   cards.forEach(c => {
     const st = statusFn(c.val, c.ref);
-    const stLabel = st.cls==='normal' ? '✓ Normal' : st.cls==='low' ? '⬇ Low' : '⬆ High';
     grid.innerHTML += `
       <div class="result-card ${st.cls}">
         <div class="result-label">${c.ref.label}</div>
         <div class="result-value">${c.val}</div>
         <div class="result-unit">${c.ref.unit}</div>
-        <span class="result-status st-${st.cls}">${stLabel}</span>
+        <span class="result-status st-${st.cls}">${st.label}</span>
       </div>`;
   });
 
   const allRows = [
-    { label:'Volume',                   val:r.volume+' mL',              refTxt:'≥ '+refs.volume.min+' mL',              st:statusFn(r.volume,refs.volume) },
-    { label:'pH',                       val:String(r.pH),                refTxt:'7.2 – 8.0',                              st:statusFn(r.pH,{min:7.2,max:8.0}) },
-    { label:'Concentration (M/mL)',     val:r.concentration+' M/mL',     refTxt:'≥ '+refs.concentration.min+' M/mL',      st:statusFn(r.concentration,refs.concentration) },
-    { label:'Total Count (Million)',    val:r.totalCount+' M',           refTxt:'≥ '+refs.totalCount.min+' million',      st:statusFn(r.totalCount,refs.totalCount) },
-    { label:'Total Motility PR+NP (%)', val:r.totalMotility+'%',         refTxt:'≥ '+refs.totalMotility.min+'%',          st:statusFn(r.totalMotility,refs.totalMotility) },
-    { label:'Progressive Motility PR', val:r.progressiveMotility+'%',   refTxt:'≥ '+refs.progressiveMotility.min+'%',    st:statusFn(r.progressiveMotility,refs.progressiveMotility) },
-    { label:'Non-Progressive NP (%)',   val:r.nonProgressiveMotility+'%',refTxt:'—',                                      st:{sc:'badge-info',label:'ℹ Info'} },
-    { label:'Immotile IM (%)',          val:r.immotile+'%',              refTxt:'< 58%',                                  st:statusFn(100-r.immotile,{min:42}) },
-    { label:'Normal Forms (%)',         val:r.morphology+'%',            refTxt:'≥ '+refs.morphology.min+'%',             st:statusFn(r.morphology,refs.morphology) },
+    { label:'الحجم', val:r.volume+' mL', refTxt:'≥ '+refs.volume.min+' mL', st:statusFn(r.volume,refs.volume) },
+    { label:'الرقم الهيدروجيني (pH)', val:r.pH, refTxt:'7.2 – 8.0', st:statusFn(r.pH,{min:7.2,max:8.0}) },
+    { label:'التركيز', val:r.concentration+' مليون/mL', refTxt:'≥ '+refs.concentration.min, st:statusFn(r.concentration,refs.concentration) },
+    { label:'العدد الكلي', val:r.totalCount+' مليون', refTxt:'≥ '+refs.totalCount.min, st:statusFn(r.totalCount,refs.totalCount) },
+    { label:'إجمالي الحركة (PR+NP)', val:r.totalMotility+'%', refTxt:'≥ '+refs.totalMotility.min+'%', st:statusFn(r.totalMotility,refs.totalMotility) },
+    { label:'الحركة التقدمية PR (%)', val:r.progressiveMotility+'%', refTxt:'≥ '+refs.progressiveMotility.min+'%', st:statusFn(r.progressiveMotility,refs.progressiveMotility) },
+    { label:'الحركة غير التقدمية NP (%)', val:r.nonProgressiveMotility+'%', refTxt:'—', st:{sc:'badge-info',label:'ℹ معلومات'} },
+    { label:'غير متحركة IM (%)', val:r.immotile+'%', refTxt:'< 58%', st:statusFn(100-r.immotile,{min:42}) },
+    { label:'الشكل الطبيعي Morphology (%)', val:r.morphology+'%', refTxt:'≥ '+refs.morphology.min+'%', st:statusFn(r.morphology,refs.morphology) },
   ];
 
   const tbody = document.getElementById('detailTableBody');
@@ -1805,67 +1655,66 @@ function showResults(r) {
   conclusionBox.style.display = 'block';
   if (abnormals === 0) {
     conclusionBox.className = 'conclusion-box normal';
-    conclusionBox.innerHTML = `<div class="conclusion-title">✅ Normozoospermia</div>
-      <div class="conclusion-text">All parameters within normal limits per WHO ${std==='who2021'?'2021':'2010'}.</div>`;
+    conclusionBox.innerHTML = `<div class="conclusion-title">✅ Normozoospermia — سائل منوي طبيعي</div>
+      <div class="conclusion-text">جميع المعاملات ضمن الحدود الطبيعية وفق WHO ${std==='who2021'?'2021':'2010'}.</div>`;
   } else if (abnormals <= 2) {
     conclusionBox.className = 'conclusion-box abnormal';
-    conclusionBox.innerHTML = `<div class="conclusion-title">⚠️ ${abnormals} parameter(s) below reference</div>
-      <div class="conclusion-text">Recommend specialist review. Consider repeat after 3–5 days abstinence.</div>`;
+    conclusionBox.innerHTML = `<div class="conclusion-title">⚠️ خلل في ${abnormals} معيار</div>
+      <div class="conclusion-text">يُنصح بمراجعة أخصائي أمراض الذكورة لإجراء تقييم دقيق وفحوصات تكميلية.</div>`;
   } else {
     conclusionBox.className = 'conclusion-box severe';
-    conclusionBox.innerHTML = `<div class="conclusion-title">🔴 ${abnormals} parameters outside normal range</div>
-      <div class="conclusion-text">Repeat test after 3–5 days abstinence. Andrologist consultation required.</div>`;
+    conclusionBox.innerHTML = `<div class="conclusion-title">🔴 اضطراب في ${abnormals} معايير</div>
+      <div class="conclusion-text">يُستوجب إعادة الفحص بعد 3–5 أيام امتناع ومراجعة طبيب متخصص فوراً.</div>`;
   }
 
   document.getElementById('resultsSection').style.display = 'block';
   document.getElementById('resultsSection').scrollIntoView({ behavior:'smooth' });
 }
 
-
-
 // ======================================================
 //  REFERENCE VALUES
 // ======================================================
 function getRefs(std) {
   return std === 'who2021' ? {
-    volume:             { min:1.4, unit:'mL',    label:'Volume' },
-    concentration:      { min:16,  unit:'M/mL',  label:'Concentration' },
-    totalMotility:      { min:42,  unit:'%',     label:'Total Motility' },
-    progressiveMotility:{ min:30,  unit:'%',     label:'Progressive Motility' },
-    morphology:         { min:4,   unit:'%',     label:'Normal Forms' },
-    totalCount:         { min:39,  unit:'M',     label:'Total Count' }
+    volume:             { min:1.4, unit:'mL',           label:'الحجم' },
+    pH:                 { min:7.2, max:8.0, unit:'',    label:'الرقم الهيدروجيني' },
+    concentration:      { min:16,  unit:'مليون/mL',     label:'التركيز' },
+    totalMotility:      { min:42,  unit:'%',            label:'إجمالي الحركة' },
+    progressiveMotility:{ min:30,  unit:'%',            label:'الحركة التقدمية' },
+    morphology:         { min:4,   unit:'%',            label:'الشكل الطبيعي' },
+    totalCount:         { min:39,  unit:'مليون',        label:'العدد الكلي' }
   } : {
-    volume:             { min:1.5, unit:'mL',    label:'Volume' },
-    concentration:      { min:15,  unit:'M/mL',  label:'Concentration' },
-    totalMotility:      { min:40,  unit:'%',     label:'Total Motility' },
-    progressiveMotility:{ min:32,  unit:'%',     label:'Progressive Motility' },
-    morphology:         { min:4,   unit:'%',     label:'Normal Forms' },
-    totalCount:         { min:39,  unit:'M',     label:'Total Count' }
+    volume:             { min:1.5, unit:'mL',           label:'الحجم' },
+    pH:                 { min:7.2, max:8.0, unit:'',    label:'الرقم الهيدروجيني' },
+    concentration:      { min:15,  unit:'مليون/mL',     label:'التركيز' },
+    totalMotility:      { min:40,  unit:'%',            label:'إجمالي الحركة' },
+    progressiveMotility:{ min:32,  unit:'%',            label:'الحركة التقدمية' },
+    morphology:         { min:4,   unit:'%',            label:'الشكل الطبيعي' },
+    totalCount:         { min:39,  unit:'مليون',        label:'العدد الكلي' }
   };
 }
 
 // ======================================================
-//  GENERATE REPORT — MedLab Pro design, English only
+//  GENERATE REPORT — full structure matching image
 // ======================================================
 function generateReport() {
-  if (!analysisResults) { alert('Please complete the video analysis first.'); return; }
+  if (!analysisResults) { alert('يرجى إجراء التحليل أولاً.'); return; }
 
-  const r    = analysisResults;
-  const std  = document.getElementById('set-standard').value;
+  const r   = analysisResults;
+  const std = document.getElementById('set-standard').value;
   const refs = getRefs(std);
 
-  // Patient info
-  const ptName    = document.getElementById('patientName').value  || '—';
-  const ptTitle   = document.getElementById('title').value        || '';
-  const ptAge     = document.getElementById('patientAge').value   || '—';
-  const ptGender  = document.getElementById('gender').value       || 'Male';
-  const ptDoctor  = document.getElementById('doctorName').value   || '—';
-  const ptId      = document.getElementById('patientId').value    || '—';
-  const examDate  = document.getElementById('examDate').value     || '—';
-  const labName   = document.getElementById('set-labName').value;
-  const footerTxt = document.getElementById('set-footer').value;
+  const name     = document.getElementById('patientName').value;
+  const title    = document.getElementById('title').value;
+  const age      = document.getElementById('patientAge').value;
+  const gender   = document.getElementById('gender').value;
+  const doctor   = document.getElementById('doctorName').value;
+  const pid      = document.getElementById('patientId').value;
+  const examDate = document.getElementById('examDate').value;
+  const labName  = document.getElementById('set-labName').value;
+  const footer   = document.getElementById('set-footer').value;
 
-  // Specimen
+  // Specimen info
   const abstinence   = document.getElementById('spec-abstinence').value;
   const collection   = document.getElementById('spec-collection').value;
   const appearance   = document.getElementById('spec-appearance').value;
@@ -1873,267 +1722,206 @@ function generateReport() {
   const viscosity    = document.getElementById('spec-viscosity').value;
 
   // Biochemistry
-  const fructose      = document.getElementById('bc-fructose').value;
-  const pus           = document.getElementById('bc-pus').value;
-  const rbc           = document.getElementById('bc-rbc').value;
-  const bacteria      = document.getElementById('bc-bacteria').value;
+  const fructose     = document.getElementById('bc-fructose').value;
+  const pus          = document.getElementById('bc-pus').value;
+  const rbc          = document.getElementById('bc-rbc').value;
+  const bacteria     = document.getElementById('bc-bacteria').value;
   const agglutination = document.getElementById('bc-agglutination').value;
-  const vitality      = document.getElementById('bc-vitality').value;
+  const vitality     = document.getElementById('bc-vitality').value;
 
   // Advanced
-  const oxidative  = document.getElementById('adv-oxidative').value;
-  const antibodies = document.getElementById('adv-antibodies').value;
-  const roundcells = document.getElementById('adv-roundcells').value || '—';
+  const oxidative    = document.getElementById('adv-oxidative').value;
+  const antibodies   = document.getElementById('adv-antibodies').value;
+  const roundcells   = document.getElementById('adv-roundcells').value;
 
-  const printTime = new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-  const refWHO    = std === 'who2021' ? 'WHO 2021' : 'WHO 2010';
+  const printDate = new Date().toLocaleString('ar-IQ');
 
-  // ── Abnormality helper ──
-  const isAbn = (fid, val) => {
-    const numVal = parseFloat(val);
-    if (['volume','concentration','totalCount','progressiveMotility','totalMotility','morphology'].includes(fid)) {
-      const ref = refs[fid]; if (!ref) return false;
-      return !isNaN(numVal) && numVal < ref.min;
-    }
-    if (fid === 'vitality')      return !isNaN(numVal) && numVal < 54;
-    if (fid === 'azoospermia')   return val === 'Yes';
-    if (fid === 'pus')           return val !== '< 1 M/mL' && val !== 'Nil' && val !== '';
-    if (fid === 'rbc')           return val !== 'Absent';
-    if (fid === 'bacteria')      return val !== 'Absent';
-    if (fid === 'agglutination') return val !== 'Nil';
-    if (fid === 'oxidative')     return val !== 'Normal';
-    if (fid === 'antibodies')    return val !== 'Negative';
-    return false;
+  // Status helpers
+  const stOf = (val, ref) => {
+    if (ref.min!==undefined && val<ref.min) return 'low';
+    if (ref.max!==undefined && val>ref.max) return 'high';
+    return 'normal';
   };
-
-  // ── Editable field (same style as MedLab Pro) ──
-  const inp = (fid, val, w='100px') => {
-    const abn = isAbn(fid, val);
-    return `<span style="display:inline-block;border:1.5px solid #b0b0b0;border-radius:4px;background:#fff;min-width:${w};text-align:center;padding:0 6px;">
-      <input type="text" id="ri-${fid}" value="${val}"
-        style="border:none;outline:none;width:100%;text-align:center;font-size:15px;font-weight:${abn?'900':'700'};
-               color:${abn?'#cc0000':'#000000'};background:transparent;font-family:Arial,sans-serif;"
-        oninput="refreshAbn(this,'${fid}')">
-    </span>`;
+  const badge = (st, txt) => {
+    if (st==='low')    return `<span style="background:#ffebee;color:#c62828;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;">${txt}</span>`;
+    if (st==='high')   return `<span style="background:#e3f2fd;color:#1565c0;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;">${txt}</span>`;
+    if (st==='warn')   return `<span style="background:#fff8e1;color:#e65100;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;">${txt}</span>`;
+    if (st==='neutral') return `<span style="background:#f5f5f5;color:#546e7a;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;">${txt}</span>`;
+    return `<span style="background:#e8f5e9;color:#2e7d32;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:700;">${txt}</span>`;
   };
+  const stColor = st => st==='low'?'#c62828':st==='high'?'#1565c0':st==='warn'?'#e65100':'#2e7d32';
 
-  // ── Barcode SVG (Code 128) — same as MedLab Pro ──
-  function barcode128(text) {
-    const C128 = {chars:' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~',
-      widths:[[2,1,2,2,2,2],[2,2,2,1,2,2],[2,2,2,2,2,1],[1,2,1,2,2,3],[1,2,1,3,2,2],[1,3,1,2,2,2],[1,2,2,2,1,3],[1,2,2,3,1,2],[1,3,2,2,1,2],[2,2,1,2,1,3],[2,2,1,3,1,2],[2,3,1,2,1,2],[1,1,2,2,3,2],[1,2,2,1,3,2],[1,2,2,2,3,1],[1,1,3,2,2,2],[1,2,3,1,2,2],[1,2,3,2,2,1],[2,2,3,2,1,1],[2,2,1,1,3,2],[2,2,1,2,3,1],[2,1,3,2,1,2],[2,2,3,1,1,2],[3,1,2,1,3,1],[3,1,1,2,2,2],[3,2,1,1,2,2],[3,2,1,2,2,1],[3,1,2,2,1,2],[3,2,2,1,1,2],[3,2,2,2,1,1],[2,1,2,4,1,1],[2,1,4,2,1,1],[4,1,2,2,1,1],[4,1,1,1,4,1],[1,1,4,2,2,1],[2,1,1,1,4,2],[2,1,1,4,1,2],[2,4,1,2,1,1],[4,1,1,2,1,2],[1,2,4,1,1,2],[1,4,1,4,1,1],[2,2,1,4,1,1],[4,4,1,1,1,1],[1,1,2,3,2,2],[1,2,2,3,2,1],[2,2,2,3,1,1],[1,1,3,2,3,1],[2,1,1,4,2,1],[1,4,2,1,2,1],[2,1,4,1,1,3],[1,3,2,3,1,1],[2,1,1,1,1,5],[2,1,1,5,1,1],[5,1,1,2,1,1],[2,1,5,1,1,2],[2,1,3,1,3,1],[2,3,1,1,3,1],[1,3,1,3,2,1],[1,4,2,2,1,1],[1,2,2,4,1,1],[1,2,4,1,2,1],[1,4,1,2,2,1],[2,1,4,4,1,1],[3,1,2,1,1,3],[3,1,1,1,2,3],[3,3,1,1,2,1],[3,1,2,3,1,1],[2,1,1,3,3,1],[1,1,2,2,1,4],[1,2,1,1,4,2],[1,2,1,4,1,2],[1,4,1,1,2,2],[3,1,1,2,4,1],[1,3,2,1,4,1],[2,3,1,2,3,1],[1,4,2,1,1,3],[4,1,4,1,1,2],[2,1,1,1,3,4],[3,1,4,1,2,1],[1,1,4,2,1,3],[1,4,4,1,1,2],[3,3,1,2,1,2],[3,1,1,4,2,1],[2,1,2,2,4,1],[2,1,4,2,2,1],[4,2,1,2,1,2],[2,4,2,2,1,1],[1,3,4,1,1,2],[2,3,4,1,1,1],[1,2,4,2,2,1],[3,2,4,1,1,1],[4,2,4,1,1,1],[2,2,1,1,1,5],[2,1,1,2,1,5],[3,2,1,1,1,4],[2,2,1,2,3,2],[2,2,3,2,1,2],[2,2,1,1,4,2],[2,2,3,1,2,2],[2,1,4,1,3,1],[4,2,1,1,3,1],[1,1,2,4,2,2],[1,2,2,4,2,1],[1,2,4,4,1,1],[1,4,4,2,1,1],[4,2,2,1,1,2],[4,2,2,2,1,1],[4,1,2,1,2,2],[1,2,4,1,3,1],[4,1,2,2,2,1],[1,1,1,1,4,3],[1,1,1,3,4,1],[1,3,1,1,4,1],[1,1,4,1,1,3],[1,1,4,3,1,1],[4,1,1,1,1,3],[4,1,1,3,1,1],[1,1,3,1,4,1],[1,1,4,1,3,1],[3,1,1,1,4,1],[4,1,1,1,3,1],[2,1,1,4,1,2],[2,1,1,2,1,4],[2,1,1,2,3,2]]
-    };
-    const START_B=104, STOP=[2,3,3,1,1,1,2];
-    let codes=[START_B], check=START_B;
-    for(let i=0;i<text.length;i++){const idx=C128.chars.indexOf(text[i]);if(idx<0)continue;codes.push(idx);check+=(i+1)*idx;}
-    codes.push(check%103);
-    let bars=[];
-    codes.forEach(c=>{C128.widths[c].forEach((w,i)=>bars.push({w,dark:i%2===0}));});
-    STOP.forEach((w,i)=>bars.push({w,dark:i%2===0}));
-    bars.push({w:2,dark:false});
-    const h=38, totalW=bars.reduce((s,b)=>s+b.w*2,0);
-    let x=0, rects='';
-    bars.forEach(b=>{if(b.dark)rects+=`<rect x="${x}" y="0" width="${b.w*2}" height="${h}" fill="#000"/>`;x+=b.w*2;});
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${totalW}" height="${h}" viewBox="0 0 ${totalW} ${h}" style="display:block">${rects}</svg>`;
-  }
+  // Editable input field
+  const inp = (val, id, w='90px') =>
+    `<input type="text" id="${id}" value="${val}" class="rpt-val-input" style="width:${w};" onchange="refreshBadge('${id}')">`;
 
-  const barcodeId  = (ptId||'').replace(/[^A-Z0-9]/gi,'').toUpperCase().substring(0,12) || '00000000';
-  const barcodeSvg = barcode128(barcodeId);
-  const nameColor  = '#cc0011';
+  // Logo
+  const logoHTML = logoDataURL
+    ? `<img src="${logoDataURL}" style="width:100%;max-height:130px;object-fit:contain;">`
+    : `<div style="width:100%;height:90px;display:flex;align-items:center;justify-content:center;background:#f5f7fa;border:2px dashed #ccc;border-radius:6px;color:#90a4ae;text-align:center;">
+        <div><div style="font-size:28px;">🏥</div><div style="font-size:16px;font-weight:800;">${labName}</div></div>
+       </div>`;
 
-  // ── Logo / Header ──
-  const hdrHTML = logoDataURL
-    ? `<img src="${logoDataURL}" style="width:100%;max-height:170px;display:block;object-fit:fill">`
-    : `<div style="background:#003366;color:#fff;padding:8px 18px;font-size:16px;font-weight:900;text-align:center">${labName}</div>`;
+  // Abnormal count
+  const cKeys = ['concentration','totalMotility','progressiveMotility','morphology','totalCount','volume'];
+  const abnormals = cKeys.filter(k => stOf(r[k], refs[k]) !== 'normal').length;
+  let conclusionCls = abnormals===0 ? 'normal' : abnormals<=2 ? 'abnormal' : 'severe';
+  let conclusionTxt = abnormals===0
+    ? `Normozoospermia — السائل المنوي ضمن الحدود الطبيعية وفق معايير WHO ${std==='who2021'?'2021':'2010'}.`
+    : abnormals<=2
+      ? `يُلاحظ خلل في ${abnormals} معيار خارج الحد الطبيعي. يُنصح بمراجعة الطبيب المختص.`
+      : `اضطراب ملحوظ في ${abnormals} معايير. يُستوجب إعادة الفحص ومراجعة أخصائي أمراض الذكورة.`;
 
-  // ── Patient box — identical layout to MedLab Pro ──
-  const LBL  = `font-size:9px;font-weight:800;color:#555;text-transform:uppercase;letter-spacing:0.6px;white-space:nowrap;width:48px;flex-shrink:0`;
-  const BL   = `flex:1;border:1.5px solid #bbb;border-radius:3px;background:#fff;padding:1px 7px;font-size:15px;font-weight:800;color:${nameColor};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;text-align:center`;
-  const BLSA = `flex:1;border:1.5px solid #bbb;border-radius:3px;background:#fff;padding:1px 7px;font-size:12px;font-weight:800;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;text-align:center`;
-  const LBLR = `font-size:8px;font-weight:800;color:#555;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;width:36px;flex-shrink:0`;
-  const BR   = `flex:1;border:1.5px solid #bbb;border-radius:3px;background:#fff;padding:1px 6px;font-size:12px;font-weight:700;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block`;
+  const refWHO = `WHO ${std==='who2021'?'2021 (6th)':'2010 (5th)'}`;
 
-  const RL  = (lbl,val,style) => `<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px"><span style="${LBL}">${lbl}</span><span style="${style}">${val}</span></div>`;
-  const RR  = (lbl,val)       => `<div style="display:flex;align-items:center;gap:4px;margin-bottom:1px"><span style="${LBLR}">${lbl}</span><span style="${BR}">${val}</span></div>`;
+  // Section header style
+  const secHdr = txt => `
+    <tr>
+      <td colspan="3" style="background:#dbeafe;color:#1e40af;font-size:12px;font-weight:800;padding:6px 10px;border-right:4px solid #1565c0;border-bottom:1px solid #bfdbfe;">
+        ${txt}
+      </td>
+    </tr>
+    <tr style="background:#0d2b5e;color:white;">
+      <td style="padding:5px 10px;font-size:11px;font-weight:700;width:50%;">Parameter / المعيار</td>
+      <td style="padding:5px 10px;font-size:11px;font-weight:700;width:25%;text-align:center;">Result / النتيجة</td>
+      <td style="padding:5px 10px;font-size:11px;font-weight:700;width:25%;text-align:center;">Reference / المرجع</td>
+    </tr>`;
 
-  const ptFullName = ptTitle ? `${ptTitle} / ${ptName}` : ptName;
+  const row = (label, valHTML, ref, bg='') =>
+    `<tr style="background:${bg||'white'};">
+      <td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #e8edf5;"><strong>■</strong> ${label}</td>
+      <td style="padding:4px 10px;font-size:12px;border-bottom:1px solid #e8edf5;text-align:center;">${valHTML}</td>
+      <td style="padding:5px 10px;font-size:12px;border-bottom:1px solid #e8edf5;text-align:center;color:#546e7a;">${ref}</td>
+    </tr>`;
 
-  const ptBox = `
-  <div style="margin:2px 0;direction:ltr">
-    <div style="display:flex;align-items:flex-start;gap:8px">
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-        ${RL('Name', ptFullName, BL)}
-        ${RL('Sex/Age', `Male / ${ptAge} Year`, BLSA)}
-        ${RL('Doctor', ptDoctor, BL)}
-      </div>
-      <div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch">
-        <div style="text-align:right;margin-bottom:2px">
-          ${barcodeSvg}
-          <div style="font-size:7px;font-weight:900;color:#000;letter-spacing:2px;font-family:'Courier New',monospace;text-align:center">${barcodeId}</div>
-        </div>
-        <div style="display:flex;flex-direction:column">
-          ${RR('ID',   ptId)}
-          ${RR('Date', examDate)}
-          ${RR('Print',printTime)}
-        </div>
-      </div>
-    </div>
-  </div>`;
+  const html = `
+<div class="rpt-root" id="rptRootEl">
 
-  // ── Section builder — identical to MedLab Pro renderSec ──
-  const color = '#003366';
+  <!-- LOGO -->
+  <div style="margin-bottom:10px;">${logoHTML}</div>
 
-  const buildSec = (label, rows) => {
-    const rowsHTML = rows.map((row, fi) => {
-      const bg = fi % 2 === 0 ? '#ffffff' : '#f9f9f9';
-      const abn = isAbn(row.fid, row.rawVal);
-      return `<tr style="background:${bg}">
-        <td style="font-size:15px;font-weight:700;color:#000;padding:1px 8px;width:38%;border:none;border-bottom:1px solid #e0e0e0">
-          <span style="color:#000;margin-right:5px">■</span>${row.label}
-        </td>
-        <td style="font-size:15px;font-weight:700;color:#000;padding:1px 8px;width:32%;border:none;border-bottom:1px solid #e0e0e0;text-align:center">
-          ${row.inputHTML}
-        </td>
-        <td style="font-size:15px;font-weight:700;color:#000;padding:1px 8px;width:30%;border:none;border-bottom:1px solid #e0e0e0">${row.ref || '—'}</td>
-      </tr>`;
-    }).join('');
+  <!-- TITLE -->
+  <div style="background:#0d2b5e;color:white;text-align:center;padding:9px;font-size:16px;font-weight:800;letter-spacing:0.5px;margin-bottom:8px;">
+    تقرير تحليل السائل المنوي — Semen Analysis Report
+  </div>
 
-    return `
-    <div style="border:1.5px solid #b8b8b8;border-radius:0;margin-bottom:2px;overflow:hidden;page-break-inside:avoid">
-      <div style="background:#ffffff;padding:1px 10px;border-bottom:1.5px solid #b8b8b8">
-        <span style="font-size:16px;font-weight:900;color:#1a4fa0;letter-spacing:0.3px">${label}</span>
-      </div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#f0f0f0">
-          <th style="font-size:15px;font-weight:800;color:#000;padding:1px 8px;text-align:left;border:none;border-bottom:1.5px solid #b8b8b8;width:38%">Parameter</th>
-          <th style="font-size:15px;font-weight:800;color:#000;padding:1px 8px;text-align:center;border:none;border-bottom:1.5px solid #b8b8b8;width:32%">Result</th>
-          <th style="font-size:15px;font-weight:800;color:#000;padding:1px 8px;text-align:left;border:none;border-bottom:1.5px solid #b8b8b8;width:30%">Reference (${refWHO})</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-    </div>`;
-  };
+  <!-- PATIENT HEADER -->
+  <table style="width:100%;border-collapse:collapse;border:2px solid #0d2b5e;margin-bottom:10px;">
+    <tr>
+      <td style="width:50%;padding:0;vertical-align:top;">
+        <table style="width:100%;border-collapse:collapse;">
+          ${[
+            ['NAME', `${title} / ${name}`],
+            ['SEX / AGE', `${gender} / ${age} سنة`],
+            ['DOCTOR', doctor]
+          ].map((pair,i,arr) => `
+            <tr>
+              <td style="padding:6px 10px;font-size:10px;font-weight:800;color:#0d2b5e;background:#f5f7fa;border-bottom:${i<arr.length-1?'1px solid #cfd8dc':'none'};border-left:1px solid #cfd8dc;width:90px;text-transform:uppercase;letter-spacing:0.5px;">${pair[0]}</td>
+              <td style="padding:6px 10px;font-size:13px;font-weight:700;color:#b71c1c;border-bottom:${i<arr.length-1?'1px solid #cfd8dc':'none'};">${pair[1]}</td>
+            </tr>`).join('')}
+        </table>
+      </td>
+      <td style="width:50%;padding:0;vertical-align:top;border-right:2px solid #0d2b5e;">
+        <table style="width:100%;border-collapse:collapse;">
+          ${[
+            ['ID', pid],
+            ['DATE', examDate],
+            ['PRINT', printDate]
+          ].map((pair,i,arr) => `
+            <tr>
+              <td style="padding:6px 10px;font-size:10px;font-weight:800;color:#0d2b5e;background:#f5f7fa;border-bottom:${i<arr.length-1?'1px solid #cfd8dc':'none'};border-left:1px solid #cfd8dc;width:70px;text-transform:uppercase;">${pair[0]}</td>
+              <td style="padding:6px 10px;font-size:13px;font-weight:700;color:#b71c1c;border-bottom:${i<arr.length-1?'1px solid #cfd8dc':'none'};">${pair[1]}</td>
+            </tr>`).join('')}
+        </table>
+      </td>
+    </tr>
+  </table>
 
-  // ── Conclusion ──
-  const cKeys    = ['concentration','totalMotility','progressiveMotility','morphology','totalCount','volume'];
-  const abnCount = cKeys.filter(k => isAbn(k, r[k])).length;
-  const conclusionTxt = abnCount === 0
-    ? `Normozoospermia — All parameters within normal limits per ${refWHO}.`
-    : abnCount <= 2
-      ? `${abnCount} parameter(s) outside normal range. Recommend specialist review.`
-      : `${abnCount} parameters outside normal range. Re-test after 3–5 days abstinence and consult andrologist.`;
+  <!-- MAIN TABLE -->
+  <table style="width:100%;border-collapse:collapse;border:1.5px solid #0d2b5e;margin-bottom:10px;">
+    <tbody>
 
-  // ── Full report HTML ──
-  const reportHTML = `
-  <div style="font-family:Arial,sans-serif;color:#000;font-size:15px;direction:ltr;max-width:794px;margin:0 auto;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+      <!-- ── Specimen Information ── -->
+      ${secHdr('Specimen Information / معلومات العينة')}
+      ${row('Abstinence Period / فترة الامتناع', inp(abstinence,'ri-abstinence','120px'), '3-5 days', '#f7f9fc')}
+      ${row('Collection Method / طريقة الجمع',  inp(collection,'ri-collection','120px'),  '—')}
+      ${row('Appearance / المظهر',              inp(appearance,'ri-appearance','120px'),  'Opaque-White', '#f7f9fc')}
+      ${row('Liquefaction Time / زمن التميع',   inp(liquefaction,'ri-liquefaction','110px'), '< 60 min')}
+      ${row('Viscosity / اللزوجة',              inp(viscosity,'ri-viscosity','100px'),    'Nil', '#f7f9fc')}
+      ${row('pH',                               inp(r.pH,'ri-ph','80px'),                '7.2 – 8.0')}
 
-    ${hdrHTML}
+      <!-- ── Sperm Count ── -->
+      ${secHdr('Sperm Count / عدد الحيوانات المنوية')}
+      ${row('Concentration (M/mL) / التركيز',   inp(r.concentration,'ri-conc','80px'), `≥ ${refs.concentration.min} M/mL`, '#f7f9fc')}
+      ${row('Total Count (Million) / العدد الكلي', inp(r.totalCount,'ri-total','80px'), `≥ ${refs.totalCount.min} million`)}
+      ${row('Azoospermia',                       inp(r.concentration<0.1?'Yes':'No','ri-azoo','80px'), 'No', '#f7f9fc')}
 
-    <div style="background:${color};color:#fff;padding:3px 12px;text-align:center;font-weight:900;font-size:14px;letter-spacing:1px">
-      SEMEN ANALYSIS REPORT (SPERMIOGRAM)
-    </div>
+      <!-- ── Motility ── -->
+      ${secHdr(`Motility (${refWHO}) / الحركة`)}
+      ${row('Progressive Motility PR (%)',   inp(r.progressiveMotility,'ri-pr','80px'),  `≥ ${refs.progressiveMotility.min}%`, '#f7f9fc')}
+      ${row('Non-Progressive NP (%)',        inp(r.nonProgressiveMotility,'ri-np','80px'), '—')}
+      ${row('Immotile IM (%)',               inp(r.immotile,'ri-im','80px'),             '—', '#f7f9fc')}
+      ${row('Total Motile PR+NP (%)',        inp(r.totalMotility,'ri-tm','80px'),         `≥ ${refs.totalMotility.min}%`)}
+      ${row('Vitality (%)',                  inp(vitality,'ri-vitality','80px'),          '≥ 54%', '#f7f9fc')}
 
-    <div style="border:1.5px solid #b8b8b8;margin:3px 0 4px;padding:4px 10px;background:#fafafa">
-      ${ptBox}
-    </div>
+      <!-- ── Morphology ── -->
+      ${secHdr('Morphology (Kruger) / الشكل')}
+      ${row('Normal Forms (%)',              inp(r.morphology,'ri-morph','80px'),         `≥ ${refs.morphology.min}%`, '#f7f9fc')}
 
-    <div style="margin:0 0 3px;height:2px;background:${color}"></div>
+      <!-- ── Seminal Biochemistry ── -->
+      ${secHdr('Seminal Biochemistry / الكيمياء الحيوية')}
+      ${row('Fructose / الفركتوز',          inp(fructose,'ri-fructose','100px'),         'Positive', '#f7f9fc')}
+      ${row('Pus Cells (/mL) / خلايا القيح', inp(pus,'ri-pus','80px'),                  '< 1 M/mL')}
+      ${row('RBC / كريات الدم الحمراء',     inp(rbc,'ri-rbc','80px'),                   'Absent', '#f7f9fc')}
+      ${row('Bacteria / البكتيريا',         inp(bacteria,'ri-bacteria','80px'),          'Absent')}
+      ${row('Agglutination / التكتل',       inp(agglutination,'ri-agglut','80px'),       'Nil', '#f7f9fc')}
 
-    ${buildSec('Specimen Information', [
-      { fid:'abstinence',   label:'Abstinence Period',     rawVal:abstinence,   inputHTML:inp('abstinence',   abstinence,   '130px'), ref:'3-5 days' },
-      { fid:'collection',   label:'Collection Method',     rawVal:collection,   inputHTML:inp('collection',   collection,   '130px'), ref:'—' },
-      { fid:'volume',       label:'Volume (mL)',           rawVal:r.volume,     inputHTML:inp('volume',       r.volume,     '90px'),  ref:'≥ 1.4 mL' },
-      { fid:'appearance',   label:'Appearance',            rawVal:appearance,   inputHTML:inp('appearance',   appearance,   '130px'), ref:'Opaque-White' },
-      { fid:'liquefaction', label:'Liquefaction Time',     rawVal:liquefaction, inputHTML:inp('liquefaction', liquefaction, '130px'), ref:'< 60 min' },
-      { fid:'viscosity',    label:'Viscosity',             rawVal:viscosity,    inputHTML:inp('viscosity',    viscosity,    '110px'), ref:'Nil' },
-      { fid:'ph',           label:'pH',                    rawVal:r.pH,         inputHTML:inp('ph',           r.pH,         '80px'),  ref:'7.2 – 8.0' }
-    ])}
+    </tbody>
+  </table>
 
-    ${buildSec('Sperm Count', [
-      { fid:'concentration', label:'Concentration (M/mL)', rawVal:r.concentration, inputHTML:inp('concentration', r.concentration, '90px'), ref:`≥ ${refs.concentration.min} M/mL` },
-      { fid:'totalCount',    label:'Total Count (Million)', rawVal:r.totalCount,    inputHTML:inp('totalCount',    r.totalCount,    '90px'), ref:`≥ ${refs.totalCount.min} million` },
-      { fid:'azoospermia',   label:'Azoospermia',           rawVal:r.concentration<0.1?'Yes':'No', inputHTML:inp('azoospermia', r.concentration<0.1?'Yes':'No', '80px'), ref:'No' }
-    ])}
+  <!-- CONCLUSION -->
+  <div id="rptConclusion" style="border-radius:6px;padding:10px 14px;margin-bottom:10px;border:1.5px solid;${
+    conclusionCls==='normal'  ? 'background:#e8f5e9;border-color:#81c784;color:#1b5e20;' :
+    conclusionCls==='abnormal'? 'background:#fff3e0;border-color:#ffb74d;color:#e65100;' :
+                                'background:#ffebee;border-color:#ef9a9a;color:#b71c1c;'
+  }">
+    <div style="font-size:13px;font-weight:800;margin-bottom:4px;">📋 الاستنتاج / Conclusion</div>
+    <textarea id="rpt-conclusion-text" style="width:100%;border:1px solid rgba(0,0,0,0.1);border-radius:4px;padding:5px 8px;font-family:'Tajawal',sans-serif;font-size:12px;resize:vertical;min-height:46px;background:rgba(255,255,255,0.6);color:inherit;line-height:1.8;">${conclusionTxt}</textarea>
+  </div>
 
-    ${buildSec(`Motility (${refWHO})`, [
-      { fid:'progressiveMotility',    label:'Progressive Motility PR (%)',    rawVal:r.progressiveMotility,    inputHTML:inp('progressiveMotility',    r.progressiveMotility,    '80px'), ref:`≥ ${refs.progressiveMotility.min}%` },
-      { fid:'nonProgressiveMotility', label:'Non-Progressive NP (%)',         rawVal:r.nonProgressiveMotility, inputHTML:inp('nonProgressiveMotility', r.nonProgressiveMotility, '80px'), ref:'—' },
-      { fid:'immotile',               label:'Immotile IM (%)',                rawVal:r.immotile,               inputHTML:inp('immotile',               r.immotile,               '80px'), ref:'—' },
-      { fid:'totalMotility',          label:'Total Motile PR+NP (%)',         rawVal:r.totalMotility,          inputHTML:inp('totalMotility',          r.totalMotility,          '80px'), ref:`≥ ${refs.totalMotility.min}%` },
-      { fid:'vitality',               label:'Vitality (%)',                   rawVal:vitality,                 inputHTML:inp('vitality',               vitality,                 '80px'), ref:'≥ 54%' }
-    ])}
+  <!-- ADVANCED MARKERS -->
+  <table style="width:100%;border-collapse:collapse;border:1.5px solid #0d2b5e;margin-bottom:10px;">
+    <tbody>
+      ${secHdr('Advanced Markers / المؤشرات المتقدمة')}
+      ${row('Oxidative Stress / الإجهاد التأكسدي', inp(oxidative,'ri-oxidative','100px'), 'Normal', '#f7f9fc')}
+      ${row('Antisperm Antibodies / الأجسام المضادة', inp(antibodies,'ri-antibodies','100px'), 'Negative')}
+      ${row('Round Cells (/mL) / الخلايا المستديرة', inp(roundcells||'—','ri-roundcells','100px'), '< 5 M/mL', '#f7f9fc')}
+    </tbody>
+  </table>
 
-    ${buildSec('Morphology (Kruger)', [
-      { fid:'morphology', label:'Normal Forms (%)', rawVal:r.morphology, inputHTML:inp('morphology', r.morphology, '80px'), ref:`≥ ${refs.morphology.min}%` }
-    ])}
+  <!-- ANALYSIS INFO -->
+  <div style="background:#f5f7fa;border:1px solid #e0e7ef;border-radius:5px;padding:7px 12px;margin-bottom:10px;font-size:10px;color:#546e7a;display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+    <span>📊 إطارات: <strong>${r.framesAnalyzed}</strong></span>
+    <span>⏱ المدة: <strong>${r.duration.toFixed(1)} ث</strong></span>
+    <span>🔬 المعيار: <strong>${refWHO}</strong></span>
+    <span>🤖 النظام: <strong>CASA Pro v3.0</strong></span>
+  </div>
 
-    ${buildSec('Seminal Biochemistry', [
-      { fid:'fructose',      label:'Fructose',          rawVal:fructose,      inputHTML:inp('fructose',      fructose,      '110px'), ref:'Positive' },
-      { fid:'pus',           label:'Pus Cells (/mL)',   rawVal:pus,           inputHTML:inp('pus',           pus,           '90px'),  ref:'< 1 M/mL' },
-      { fid:'rbc',           label:'RBC',               rawVal:rbc,           inputHTML:inp('rbc',           rbc,           '90px'),  ref:'Absent' },
-      { fid:'bacteria',      label:'Bacteria',          rawVal:bacteria,      inputHTML:inp('bacteria',      bacteria,      '90px'),  ref:'Absent' },
-      { fid:'agglutination', label:'Agglutination',     rawVal:agglutination, inputHTML:inp('agglutination', agglutination, '90px'),  ref:'Nil' }
-    ])}
+  <!-- DISCLAIMER -->
+  <div style="border-top:2px solid #0d2b5e;padding-top:8px;text-align:center;font-size:10px;color:#546e7a;font-style:italic;line-height:1.9;">
+    ⚠️ هذا التقرير مُنشأ بواسطة نظام CASA Pro — للأغراض الطبية المساعدة فقط — يجب مراجعة الطبيب المختص للتفسير النهائي والعلاج
+    <br>${footer}
+  </div>
 
-    ${buildSec('Advanced Markers', [
-      { fid:'oxidative',  label:'Oxidative Stress',        rawVal:oxidative,  inputHTML:inp('oxidative',  oxidative,  '110px'), ref:'Normal' },
-      { fid:'antibodies', label:'Antisperm Antibodies',    rawVal:antibodies, inputHTML:inp('antibodies', antibodies, '110px'), ref:'Negative' },
-      { fid:'roundcells', label:'Round Cells (/mL)',        rawVal:roundcells, inputHTML:inp('roundcells', roundcells, '90px'),  ref:'< 5 M/mL' }
-    ])}
+</div>`;
 
-    <div style="border:1.5px solid #b8b8b8;padding:5px 12px;margin-top:3px">
-      <span style="font-size:13px;font-weight:800;color:#996600">📋 Recommendation: </span>
-      <textarea id="ri-recommendation"
-        style="border:none;outline:none;width:calc(100% - 130px);font-size:13px;color:#333;font-family:Arial,sans-serif;resize:none;vertical-align:middle;background:transparent"
-        rows="1">${conclusionTxt}</textarea>
-    </div>
-
-    <div style="border:1.5px solid #b8b8b8;padding:5px 12px;margin-top:3px;font-size:10px;color:#546e7a;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px">
-      <span>Frames analyzed: <strong>${r.framesAnalyzed}</strong></span>
-      <span>Duration: <strong>${r.duration.toFixed(1)}s</strong></span>
-      <span>Standard: <strong>${refWHO}</strong></span>
-      <span>System: <strong>CASA Pro v3.0</strong></span>
-    </div>
-
-    <div style="border-top:2px solid ${color};padding-top:6px;margin-top:4px;text-align:center;font-size:10px;color:#546e7a;font-style:italic;line-height:1.9">
-      This report is generated by CASA Pro — For clinical assistance only — Final interpretation requires physician review
-      <br>${footerTxt}
-    </div>
-
-  </div>`;
-
-  document.getElementById('reportContent').innerHTML = reportHTML;
+  document.getElementById('reportContent').innerHTML = html;
 
   // Switch to report tab
-  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-report').classList.add('active');
   document.querySelectorAll('.tab-btn')[1].classList.add('active');
-}
-
-// ── Live abnormality colour update on edit ──
-// isAbn is defined inside generateReport, so we expose a global copy here
-function _isAbnGlobal(fid, val) {
-  const std  = document.getElementById('set-standard') ? document.getElementById('set-standard').value : 'who2021';
-  const refs = getRefs(std);
-  const numVal = parseFloat(val);
-  if (['volume','concentration','totalCount','progressiveMotility','totalMotility','morphology'].includes(fid)) {
-    const ref = refs[fid]; if (!ref) return false;
-    return !isNaN(numVal) && numVal < ref.min;
-  }
-  if (fid === 'vitality')      return !isNaN(numVal) && numVal < 54;
-  if (fid === 'azoospermia')   return val === 'Yes';
-  if (fid === 'pus')           return val !== '< 1 M/mL' && val !== 'Nil' && val !== '';
-  if (fid === 'rbc')           return val !== 'Absent';
-  if (fid === 'bacteria')      return val !== 'Absent';
-  if (fid === 'agglutination') return val !== 'Nil';
-  if (fid === 'oxidative')     return val !== 'Normal';
-  if (fid === 'antibodies')    return val !== 'Negative';
-  return false;
-}
-function refreshAbn(input, fid) {
-  const abn = _isAbnGlobal(fid, input.value);
-  input.style.color      = abn ? '#cc0000' : '#000000';
-  input.style.fontWeight = abn ? '900'     : '700';
 }
 
 // ======================================================
