@@ -215,8 +215,8 @@ svg.ring{transform:rotate(-90deg);}
 .modal-footer{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;}
 
 /* TOAST */
-.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;padding:10px 20px;border-radius:40px;font-size:12px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:transform .3s ease;z-index:1000;white-space:nowrap;pointer-events:none;}
-.toast.show{transform:translateX(-50%) translateY(0);}
+.toast{position:fixed;top:-70px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 22px;border-radius:40px;font-size:12px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.22);transition:top .32s cubic-bezier(.4,0,.2,1),opacity .32s ease;z-index:2000;white-space:nowrap;pointer-events:auto;cursor:pointer;max-width:90vw;text-align:center;opacity:0;}
+.toast.show{top:16px;opacity:1;}
 .toast.success{background:#16a34a;}
 .toast.error{background:#dc2626;}
 .toast.info{background:var(--accent);}
@@ -761,71 +761,87 @@ async function saveSettings() {
 async function saveTx(tx) {
   if (usingIDB) {
     await idbPut(STORE_TRANSACTIONS, tx);
-  } else {
-    _lsSaveTxList();
   }
+  // ALWAYS mirror to LS — so file updates don't lose data
+  _lsSaveTxList();
 }
 
 async function deleteTxFromDB(id) {
   if (usingIDB) {
     await idbDelete(STORE_TRANSACTIONS, id);
-  } else {
-    _lsSaveTxList();
   }
+  _lsSaveTxList();
 }
 
 async function saveCat(cat) {
   if (usingIDB) {
     await idbPut(STORE_CATEGORIES, cat);
-  } else {
-    _lsSaveCatList();
   }
+  _lsSaveCatList();
 }
 
 async function deleteCatFromDB(id) {
   if (usingIDB) {
     await idbDelete(STORE_CATEGORIES, id);
-  } else {
-    _lsSaveCatList();
   }
+  _lsSaveCatList();
 }
 
-// ── LS fallback helpers ───────────────────────────────
+// ── LS mirror helpers (ALWAYS run alongside IDB) ─────
 function _lsSaveTxList()  { try { localStorage.setItem(LS_FALLBACK+'_tx',  JSON.stringify(transactions));  } catch(_){} }
 function _lsSaveCatList() { try { localStorage.setItem(LS_FALLBACK+'_cat', JSON.stringify(categories));    } catch(_){} }
 
-// ── LOAD all data from IDB (or LS fallback) ───────────
+// ── LOAD all data: IDB primary, LS always as mirror/rescue ──
 async function loadAll() {
+  // 1. Always read LS mirror first (available even if IDB is fresh/empty)
+  let lsCfg = null, lsTx = [], lsCat = [];
+  try {
+    const sc = localStorage.getItem(LS_FALLBACK + '_cfg');
+    if (sc) lsCfg = JSON.parse(sc);
+    const st = localStorage.getItem(LS_FALLBACK + '_tx');
+    if (st) lsTx = JSON.parse(st);
+    const scat = localStorage.getItem(LS_FALLBACK + '_cat');
+    if (scat) lsCat = JSON.parse(scat);
+  } catch(_){}
+
   if (usingIDB) {
-    // Settings
+    // 2a. Try IDB first
     const savedCfg = await idbGet(STORE_SETTINGS, 'main');
-    if (savedCfg) cfg = { ...cfg, ...savedCfg };
+    const txRows   = await idbGetAll(STORE_TRANSACTIONS);
+    const catRows  = await idbGetAll(STORE_CATEGORIES);
 
-    // Transactions
-    const txRows = await idbGetAll(STORE_TRANSACTIONS);
-    transactions = txRows || [];
+    // 2b. If IDB is empty but LS has data → restore into IDB (handles file-update case)
+    const idbHasData = (txRows && txRows.length > 0) || (savedCfg && savedCfg.salary > 0);
+    const lsHasData  = lsTx.length > 0 || (lsCfg && lsCfg.salary > 0);
 
-    // Categories
-    const catRows = await idbGetAll(STORE_CATEGORIES);
-    if (catRows && catRows.length > 0) {
-      categories = catRows;
-    } else {
-      // First run – seed defaults
-      categories = JSON.parse(JSON.stringify(DEFAULT_CATS));
+    if (!idbHasData && lsHasData) {
+      // Rescue from LS mirror → write into IDB
+      cfg          = { ...cfg, ...(lsCfg || {}) };
+      transactions = lsTx;
+      categories   = lsCat.length ? lsCat : JSON.parse(JSON.stringify(DEFAULT_CATS));
+      // persist rescue data into IDB
+      await idbPut(STORE_SETTINGS, cfg, 'main');
+      await idbClear(STORE_TRANSACTIONS);
+      for (const tx of transactions) await idbPut(STORE_TRANSACTIONS, tx);
+      await idbClear(STORE_CATEGORIES);
       for (const c of categories) await idbPut(STORE_CATEGORIES, c);
+      console.log('[راتبي] Restored', transactions.length, 'transactions from LS mirror into IDB');
+    } else {
+      // Normal load from IDB
+      if (savedCfg) cfg = { ...cfg, ...savedCfg };
+      transactions = txRows || [];
+      if (catRows && catRows.length > 0) {
+        categories = catRows;
+      } else {
+        categories = JSON.parse(JSON.stringify(DEFAULT_CATS));
+        for (const c of categories) await idbPut(STORE_CATEGORIES, c);
+      }
     }
   } else {
-    // LocalStorage fallback
-    try {
-      const savedCfg = localStorage.getItem(LS_FALLBACK + '_cfg');
-      if (savedCfg) cfg = { ...cfg, ...JSON.parse(savedCfg) };
-      const savedTx = localStorage.getItem(LS_FALLBACK + '_tx');
-      transactions = savedTx ? JSON.parse(savedTx) : [];
-      const savedCat = localStorage.getItem(LS_FALLBACK + '_cat');
-      categories = savedCat ? JSON.parse(savedCat) : JSON.parse(JSON.stringify(DEFAULT_CATS));
-    } catch(_) {
-      categories = JSON.parse(JSON.stringify(DEFAULT_CATS));
-    }
+    // 3. IDB not available — use LS only
+    if (lsCfg) cfg = { ...cfg, ...lsCfg };
+    transactions = lsTx;
+    categories   = lsCat.length ? lsCat : JSON.parse(JSON.stringify(DEFAULT_CATS));
   }
 }
 
@@ -842,6 +858,9 @@ async function persistAll() {
     _lsSaveTxList();
     _lsSaveCatList();
   }
+  // always mirror to LS regardless of IDB usage
+  _lsSaveTxList();
+  _lsSaveCatList();
 }
 
 // ── CLEAR everything ───────────────────────────────────
@@ -855,7 +874,15 @@ async function clearAllData() {
     for (const c of categories) await idbPut(STORE_CATEGORIES, c);
     await idbPut(STORE_SETTINGS, cfg, 'main');
   }
-  try { Object.keys(localStorage).filter(k=>k.startsWith(LS_FALLBACK)).forEach(k=>localStorage.removeItem(k)); } catch(_){}
+  // clear LS mirror too
+  try {
+    localStorage.removeItem(LS_FALLBACK + '_cfg');
+    localStorage.removeItem(LS_FALLBACK + '_tx');
+    localStorage.removeItem(LS_FALLBACK + '_cat');
+  } catch(_){}
+  // re-mirror the clean state
+  _lsSaveTxList(); _lsSaveCatList();
+  try { localStorage.setItem(LS_FALLBACK + '_cfg', JSON.stringify(cfg)); } catch(_){}
 }
 
 // ── Update DB badge ───────────────────────────────────
@@ -1518,10 +1545,13 @@ function showToast(msg,type='') {
   const el=document.getElementById('toast');
   el.textContent=msg;
   el.className='toast'+(type?' '+type:'');
+  void el.offsetWidth; // force reflow so transition fires even if already showing
   el.classList.add('show');
   clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+  _toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
 }
+// tap toast to dismiss
+document.getElementById('toast').addEventListener('click',()=>{clearTimeout(_toastTimer);document.getElementById('toast').classList.remove('show');});
 
 // ═══════════════════════════════════════════════════════
 //  OFFLINE DETECTION
