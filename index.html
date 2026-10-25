@@ -227,6 +227,17 @@ a{color:inherit}
 @keyframes dlGlow{0%,100%{box-shadow:0 0 18px rgba(0,212,255,.65),0 0 40px rgba(139,63,255,.35)}50%{box-shadow:0 0 30px rgba(0,212,255,.9),0 0 60px rgba(139,63,255,.55)}}
 @keyframes shine{0%{left:-60%}60%,100%{left:130%}}
 @keyframes dlArr{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+.hint-pill{display:inline-flex;max-width:92%;line-height:1.7;text-align:center;align-items:center;gap:10px;margin:22px auto 0;padding:11px 22px;border-radius:40px;background:linear-gradient(135deg,rgba(0,212,255,.12),rgba(139,63,255,.14));border:1px solid rgba(0,212,255,.35);color:var(--text);font-size:14px;font-weight:700;text-decoration:none;box-shadow:0 0 22px rgba(0,212,255,.15);animation:hintGlow 2.6s ease-in-out infinite;transition:transform .25s}
+.hint-pill:hover{transform:translateY(-2px)}
+.hint-pill .hp-ic{display:inline-block;animation:dlArr 1.4s ease-in-out infinite}
+.hint-pill b{color:var(--cyan)}
+@keyframes hintGlow{0%,100%{box-shadow:0 0 14px rgba(0,212,255,.12)}50%{box-shadow:0 0 30px rgba(0,212,255,.35)}}
+.links-row{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:22px}
+.yt-btn,.wag-btn{display:inline-flex;align-items:center;gap:10px;padding:13px 26px;border-radius:40px;font-weight:800;font-size:15px;text-decoration:none;transition:transform .25s,box-shadow .25s}
+.yt-btn{background:linear-gradient(135deg,#ff2d2d,#c4001a);color:#fff;box-shadow:0 6px 22px rgba(255,0,0,.28)}
+.wag-btn{background:rgba(37,211,102,.1);color:#5dffa0;border:1.5px solid rgba(37,211,102,.55)}
+.yt-btn:hover,.wag-btn:hover{transform:translateY(-3px) scale(1.03)}
+.links-cap{font-size:13px;color:var(--text2);margin-top:26px}
 .dl-sm{font-size:12px;color:#bfe9ff;margin-top:-4px}
 .totop{position:fixed;bottom:20px;left:20px;z-index:50;width:44px;height:44px;border-radius:14px;border:1px solid rgba(0,212,255,.5);box-shadow:0 0 14px rgba(0,212,255,.4);background:rgba(4,7,13,.85);color:var(--cyan);font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:.3s}
 .totop.on{opacity:1;pointer-events:auto}
@@ -276,6 +287,7 @@ a{color:inherit}
     <div class="stat"><b data-count="10" data-plus="1">0</b><span>قالب طباعة CBC</span></div>
     <div class="stat"><b data-count="100" data-suf="%">0</b><span>يعمل بدون إنترنت</span></div>
   </div>
+  <a href="#contact" class="hint-pill"><span class="hp-ic">⬇️</span><span>لـ<b>تنزيل البرنامج</b> و<b>مراسلة الدعم</b> وشروحات النظام، انزل لآخر الصفحة</span></a>
   <div class="scrolldown">مرر لاستكشاف الميزات<div class="chevron"></div></div>
 </section>
 
@@ -429,7 +441,7 @@ a{color:inherit}
   <div class="empty" id="empty">لا توجد ميزة تطابق بحثك 🔍</div>
 </div>
 
-<div class="footer">
+<div class="footer" id="contact">
   <div class="brand-t">MEDLAB PRO — LABORATORY INFORMATION SYSTEM</div>
   <div class="big">مختبرك، بكل تفاصيله، في مكان واحد</div>
   <p>اطلب نسخة تجريبية أو استفسر عن أي ميزة</p>
@@ -440,6 +452,11 @@ a{color:inherit}
   </a>
   <a href="https://saifshaker819-create.github.io/MedLabPro-Download/" target="_blank" rel="noopener" class="dl-btn"><span class="arr">⬇️</span> تنزيل البرنامج</a>
   <div class="dl-sm">نسخة Windows — تنزيل مباشر</div>
+  </div>
+  <div class="links-cap">تعلّم النظام وانضم لمجتمع المستخدمين</div>
+  <div class="links-row">
+    <a href="https://youtube.com/@saifalmosawi1633" target="_blank" rel="noopener" class="yt-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6z"/></svg> شروحات النظام على يوتيوب</a>
+    <a href="https://chat.whatsapp.com/JT5KYmVIgAW4zPPqz9mz1i" target="_blank" rel="noopener" class="wag-btn"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M16 11a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm-8 0a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm0 2c-2.3 0-7 1.2-7 3.5V19h14v-2.5C15 14.2 10.3 13 8 13zm8 0c-.3 0-.6 0-1 .1 1.2.8 2 2 2 3.4V19h6v-2.5c0-2.3-4.7-3.5-7-3.5z"/></svg> انضم لكروب واتساب</a>
   </div>
 </div>
 <button class="totop" id="totop" aria-label="للأعلى">↑</button>
