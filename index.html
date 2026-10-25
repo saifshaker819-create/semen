@@ -4,390 +4,728 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MedLab Pro — كل الميزات</title>
+<meta name="description" content="MedLab Pro — نظام إدارة مختبر طبي متكامل: استقبال، ربط أجهزة، بصمة وجه وإصبع، تقارير احترافية، واتساب، مزامنة، ومتجر ميدلاب هوم.">
+<meta name="theme-color" content="#04070d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#04070d;
-  --bg2:#070d1a;
-  --cyan:#00d4ff;
-  --purple:#8b3fff;
-  --green:#00ff9d;
-  --red:#ff2244;
-  --text:#eef4fb;
-  --text2:rgba(238,244,251,.58);
+  --bg:#04070d; --bg2:#070d1a;
+  --cyan:#00d4ff; --purple:#8b3fff; --green:#00ff9d; --red:#ff2244; --amber:#ffb020;
+  --text:#f5f9ff; --text2:rgba(232,242,255,.84);
   --line:rgba(0,212,255,.16);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Cairo',sans-serif;
-  overflow-x:hidden;
-  position:relative;
-}
-
-/* خلفية نبضية متحركة */
-.bg-grid{
-  position:fixed;inset:0;z-index:0;
+body{background:var(--bg);color:var(--text);font-family:'Cairo',sans-serif;overflow-x:hidden;position:relative;}
+a{color:inherit}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
   background-image:
     radial-gradient(circle at 15% 20%, rgba(0,212,255,.10), transparent 45%),
     radial-gradient(circle at 85% 75%, rgba(139,63,255,.12), transparent 45%),
     linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
-  background-size:auto,auto,42px 42px,42px 42px;
-  pointer-events:none;
-}
+  background-size:auto,auto,42px 42px,42px 42px;}
+.orb{position:fixed;width:340px;height:340px;border-radius:50%;filter:blur(90px);opacity:.18;z-index:0;pointer-events:none;animation:orb 22s ease-in-out infinite alternate;}
+.orb.o1{background:var(--cyan);top:-80px;left:-80px}
+.orb.o2{background:var(--purple);bottom:-120px;right:-60px;animation-delay:-8s}
+@keyframes orb{0%{transform:translate(0,0)}50%{transform:translate(120px,80px)}100%{transform:translate(-40px,160px)}}
+.progress-bar{position:fixed;top:0;right:0;left:0;height:3px;z-index:60;
+  background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));transform-origin:right;transform:scaleX(0);}
 
 /* ===== HERO ===== */
-.hero{
-  position:relative;z-index:1;
-  min-height:92vh;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  text-align:center;
-  padding:40px 20px;
-  overflow:hidden;
-}
-.ecg-wrap{
-  position:absolute;left:0;right:0;top:50%;
-  height:120px;
-  opacity:.5;
-  transform:translateY(-50%);
-  pointer-events:none;
-}
-.ecg-line{
-  width:200%;height:100%;
-  stroke:var(--green);
-  stroke-width:2;
-  fill:none;
-  filter:drop-shadow(0 0 6px var(--green));
-  animation:ecgmove 6s linear infinite;
-}
+.hero{position:relative;z-index:1;min-height:94vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 16px 90px;overflow:hidden;}
+.ecg-wrap{position:absolute;left:0;right:0;top:46%;height:120px;opacity:.28;transform:translateY(-50%);pointer-events:none;}
+.ecg-line{width:200%;height:100%;stroke:var(--green);stroke-width:2;fill:none;filter:drop-shadow(0 0 6px var(--green));animation:ecgmove 6s linear infinite;}
 @keyframes ecgmove{from{transform:translateX(0);}to{transform:translateX(-50%);}}
-
-.logo-pulse{
-  width:84px;height:84px;
-  border-radius:22px;
-  background:linear-gradient(135deg,var(--cyan),var(--purple));
-  display:flex;align-items:center;justify-content:center;
-  font-size:38px;
-  margin-bottom:22px;
-  box-shadow:0 0 0 0 rgba(0,212,255,.5);
-  animation:pulseGlow 2.4s ease-out infinite;
-}
-@keyframes pulseGlow{
-  0%{box-shadow:0 0 0 0 rgba(0,212,255,.45);}
-  70%{box-shadow:0 0 0 22px rgba(0,212,255,0);}
-  100%{box-shadow:0 0 0 0 rgba(0,212,255,0);}
-}
-.hero h1{
-  font-size:clamp(34px,7vw,64px);
-  font-weight:900;
-  letter-spacing:-1px;
-  background:linear-gradient(90deg,#fff,var(--cyan) 55%,var(--purple));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  animation:riseIn .8s .1s both;
-}
-.hero .sub{
-  margin-top:14px;
-  font-size:clamp(15px,2.4vw,19px);
-  color:var(--text2);
-  max-width:560px;
-  animation:riseIn .8s .25s both;
-}
-.hero .tagline{
-  margin-top:28px;
-  font-family:'JetBrains Mono',monospace;
-  font-size:13px;
-  color:var(--green);
-  letter-spacing:2px;
-  border:1px solid rgba(0,255,157,.3);
-  padding:8px 18px;
-  border-radius:30px;
-  background:rgba(0,255,157,.06);
-  animation:riseIn .8s .4s both;
-}
+.logo-pulse{width:84px;height:84px;border-radius:22px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:22px;animation:pulseGlow 2.4s ease-out infinite;}
+@keyframes pulseGlow{0%{box-shadow:0 0 0 0 rgba(0,212,255,.45);}70%{box-shadow:0 0 0 22px rgba(0,212,255,0);}100%{box-shadow:0 0 0 0 rgba(0,212,255,0);}}
+.hero h1{font-size:clamp(36px,7vw,66px);font-weight:900;letter-spacing:-1px;background:linear-gradient(90deg,#fff,var(--cyan) 55%,var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent;animation:riseIn .8s .1s both;}
+.hero .sub{margin-top:14px;font-size:clamp(15px,2.4vw,19px);color:#e3eefa;max-width:620px;animation:riseIn .8s .25s both;line-height:1.8}
+.typed{margin-top:18px;min-height:30px;font-size:clamp(15px,2.6vw,20px);font-weight:800;color:#5fe3ff;text-shadow:0 0 14px rgba(0,212,255,.55);animation:riseIn .8s .35s both}
+.typed .cur{display:inline-block;width:2px;height:1em;background:var(--cyan);vertical-align:middle;margin-right:3px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.tagline{margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--green);letter-spacing:2px;border:1px solid rgba(0,255,157,.3);padding:8px 18px;border-radius:30px;background:rgba(0,255,157,.06);animation:riseIn .8s .45s both;}
+.stats{margin-top:34px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:100%;max-width:720px;animation:riseIn .8s .55s both}
+.stat{border:1px solid var(--line);border-radius:16px;padding:14px 8px;background:rgba(255,255,255,.03)}
+.stat b{display:block;font-family:'JetBrains Mono',monospace;font-size:clamp(22px,4vw,32px);color:#fff;text-shadow:0 0 16px rgba(0,212,255,.6)}
+.stat span{font-size:12px;color:var(--text2)}
 @keyframes riseIn{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
-.scrolldown{
-  position:absolute;bottom:28px;left:50%;transform:translateX(-50%);
-  color:var(--text2);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;
-  animation:riseIn .8s .6s both;
-}
+.scrolldown{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:var(--text2);font-size:12px;display:flex;flex-direction:column;align-items:center;gap:6px;animation:riseIn .8s .7s both;}
 .scrolldown .chevron{width:9px;height:9px;border-right:2px solid var(--cyan);border-bottom:2px solid var(--cyan);transform:rotate(45deg);animation:bounce 1.6s infinite;}
 @keyframes bounce{0%,100%{transform:translateY(0) rotate(45deg);}50%{transform:translateY(6px) rotate(45deg);}}
 
-/* ===== SECTION STRUCTURE ===== */
-.wrap{position:relative;z-index:1;max-width:1080px;margin:0 auto;padding:10px 20px 100px;}
-.cat{
-  margin-top:70px;
-}
-.cat-head{
-  display:flex;align-items:center;gap:14px;
-  margin-bottom:26px;
-  opacity:0;transform:translateY(24px);
-  transition:all .7s cubic-bezier(.2,.8,.2,1);
-}
-.cat-head.show{opacity:1;transform:translateY(0);}
-.cat-ico{
-  width:52px;height:52px;flex:0 0 52px;
-  border-radius:14px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:24px;
-  background:linear-gradient(145deg, rgba(0,212,255,.16), rgba(139,63,255,.16));
-  border:1px solid var(--line);
-}
-.cat-head h2{font-size:clamp(20px,3.4vw,27px);font-weight:800;}
-.cat-head .cat-count{
-  font-family:'JetBrains Mono',monospace;
-  font-size:12px;color:var(--text2);
-  border:1px solid var(--line);
-  border-radius:20px;padding:3px 12px;
-  margin-right:auto;
-}
+/* ===== STICKY NAV ===== */
+.nav{position:sticky;top:3px;z-index:40;background:rgba(4,7,13,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--line);}
+.nav-in{max-width:1120px;margin:0 auto;padding:10px 16px;display:flex;gap:10px;align-items:center}
+.search{flex:0 0 220px;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:7px 12px;background:rgba(255,255,255,.04)}
+.search input{background:none;border:none;outline:none;color:var(--text);font-family:inherit;font-size:14px;width:100%}
+.search input::placeholder{color:var(--text2)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;font-family:inherit;font-size:13px;font-weight:700;color:#e3eefa;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:20px;padding:6px 14px;cursor:pointer;transition:.25s;white-space:nowrap}
+.chip:hover{color:#fff;border-color:rgba(0,212,255,.7);box-shadow:0 0 12px rgba(0,212,255,.35)}
+.chip.on{color:#04070d;background:linear-gradient(135deg,var(--cyan),var(--green));border-color:transparent;box-shadow:0 0 16px rgba(0,212,255,.6),0 0 30px rgba(0,255,157,.25)}
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-  gap:14px;
-}
-.card{
-  background:linear-gradient(160deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:18px 18px 16px;
-  opacity:0;transform:translateY(26px) scale(.97);
-  transition:opacity .6s cubic-bezier(.2,.8,.2,1), transform .6s cubic-bezier(.2,.8,.2,1), border-color .3s, background .3s;
-  position:relative;
-  overflow:hidden;
-}
-.card.show{opacity:1;transform:translateY(0) scale(1);}
-.card:hover{
-  border-color:rgba(0,212,255,.55);
-  background:linear-gradient(160deg, rgba(0,212,255,.09), rgba(139,63,255,.05));
-}
-.card::before{
-  content:'';position:absolute;top:-40%;right:-40%;
-  width:120px;height:120px;border-radius:50%;
-  background:radial-gradient(circle, rgba(0,212,255,.18), transparent 70%);
-  opacity:0;transition:opacity .4s;
-}
-.card:hover::before{opacity:1;}
-.card .ico{font-size:22px;margin-bottom:10px;display:inline-block;}
-.card h3{font-size:15.5px;font-weight:800;margin-bottom:6px;line-height:1.4;}
-.card p{font-size:13px;color:var(--text2);line-height:1.75;}
+/* ===== LAYOUT ===== */
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:10px 16px 40px;}
+.sec-title{text-align:center;margin:80px 0 10px;font-size:clamp(22px,4vw,34px);font-weight:900}
+.sec-title .g{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sec-sub{text-align:center;color:#d6e6f5;font-size:14.5px;max-width:620px;margin:0 auto 34px;line-height:1.8}
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.8,.2,1),transform .7s cubic-bezier(.2,.8,.2,1)}
+.reveal.show{opacity:1;transform:none}
 
-/* شريط تقدم علوي */
-.progress-bar{
-  position:fixed;top:0;right:0;left:0;height:3px;z-index:50;
-  background:linear-gradient(90deg,var(--cyan),var(--purple),var(--green));
-  transform-origin:right;
-  transform:scaleX(0);
-}
+/* ===== JOURNEY ===== */
+.journey{position:relative;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;padding-top:6px}
+.journey .track{position:absolute;top:34px;right:8%;left:8%;height:2px;background:linear-gradient(90deg,transparent,var(--line),transparent)}
+.journey .runner{position:absolute;top:29px;width:12px;height:12px;border-radius:50%;background:var(--green);box-shadow:0 0 14px var(--green);right:8%;animation:run 7s ease-in-out infinite}
+@keyframes run{0%{right:8%}100%{right:92%}}
+.step{position:relative;text-align:center;padding:0 4px}
+.step .dot{width:58px;height:58px;margin:0 auto 12px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:24px;background:linear-gradient(145deg,rgba(0,212,255,.16),rgba(139,63,255,.16));border:1px solid var(--line);position:relative;z-index:1;transition:.35s}
+.step.lit .dot{border-color:var(--green);box-shadow:0 0 22px rgba(0,255,157,.35);transform:translateY(-4px)}
+.step h4{font-size:14px;font-weight:800;margin-bottom:4px}
+.step p{font-size:12.5px;color:#d6e6f5;line-height:1.7}
 
-/* الفوتر */
-.footer{
-  position:relative;z-index:1;
-  text-align:center;padding:60px 20px 90px;
-  color:var(--text2);font-size:13px;
-}
-.footer .brand{
-  font-family:'JetBrains Mono',monospace;
-  color:var(--cyan);letter-spacing:1px;font-size:12px;margin-bottom:10px;
-}
-.footer .big{font-size:22px;font-weight:900;color:var(--text);margin-bottom:8px;}
-.wa-btn{
-  margin-top:26px;
-  display:inline-flex;align-items:center;gap:10px;
-  padding:14px 30px;
-  border-radius:40px;
-  background:linear-gradient(135deg,#25D366,#1aa14a);
-  color:#04140a;
-  font-weight:800;font-size:15px;
-  text-decoration:none;
-  box-shadow:0 0 0 0 rgba(37,211,102,.55);
-  animation:waPulse 2.4s ease-out infinite;
-  transition:transform .25s;
-}
-.wa-btn:hover{transform:translateY(-3px) scale(1.03);}
-@keyframes waPulse{
-  0%{box-shadow:0 0 0 0 rgba(37,211,102,.5);}
-  70%{box-shadow:0 0 0 16px rgba(37,211,102,0);}
-  100%{box-shadow:0 0 0 0 rgba(37,211,102,0);}
-}
+/* ===== SPOTLIGHT ===== */
+.spot{display:grid;grid-template-columns:1.05fr 1fr;gap:26px;align-items:center;margin-top:30px;border:1px solid var(--line);border-radius:24px;padding:28px;background:linear-gradient(160deg,rgba(255,255,255,.04),rgba(255,255,255,.01));position:relative;overflow:hidden}
+.spot.rev{grid-template-columns:1fr 1.05fr}
+.spot.rev .spot-txt{order:2}
+.badge-new{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:#04140a;background:linear-gradient(135deg,var(--green),#00d4a0);padding:3px 11px;border-radius:20px;margin-bottom:12px;box-shadow:0 0 14px rgba(0,255,157,.55)}
+.spot h3{font-size:clamp(20px,3.2vw,27px);font-weight:900;margin-bottom:10px;line-height:1.4}
+.spot p.lead{color:#d9e8f7;font-size:14.5px;line-height:1.9;margin-bottom:14px}
+.ticks{list-style:none;display:grid;gap:9px}
+.ticks li{font-size:14px;color:#f1f7ff;line-height:1.75;padding-right:26px;position:relative}
+.ticks li::before{content:'✓';position:absolute;right:0;top:0;width:18px;height:18px;border-radius:6px;background:rgba(0,255,157,.14);color:var(--green);font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:3px}
+.stage{position:relative;border-radius:20px;background:#050a14;border:1px solid var(--line);min-height:300px;overflow:hidden}
 
+/* face demo */
+.cam-head{position:absolute;top:10px;right:12px;left:12px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);z-index:3}
+.rec{color:var(--red)}.rec::before{content:'●';margin-left:5px;animation:blink 1.2s steps(1) infinite}
+.face-box{position:absolute;top:44px;right:50%;transform:translateX(50%);width:150px;height:180px}
+.face-box svg{width:100%;height:100%}
+.face-frame{position:absolute;inset:-8px;border:2px solid var(--green);border-radius:14px;opacity:.9;animation:frame 3.6s ease-in-out infinite}
+@keyframes frame{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.04);opacity:.5}}
+.scanline{position:absolute;right:0;left:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);box-shadow:0 0 12px var(--cyan);animation:scan 2.2s ease-in-out infinite}
+@keyframes scan{0%{top:0}50%{top:100%}100%{top:0}}
+.lm circle{fill:var(--cyan);opacity:0;animation:lm 3.6s ease-in-out infinite}
+@keyframes lm{0%,15%{opacity:0}30%,80%{opacity:.95}100%{opacity:0}}
+.match{position:absolute;bottom:14px;right:14px;left:14px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.35);transform:translateY(130%);animation:matchIn 3.6s ease-in-out infinite;z-index:3}
+@keyframes matchIn{0%,40%{transform:translateY(130%)}52%,88%{transform:translateY(0)}100%{transform:translateY(130%)}}
+.match .av{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--purple));display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 40px}
+.match b{font-size:14px;display:block}.match small{font-size:11.5px;color:var(--text2)}
+.match .go{margin-right:auto;font-size:11px;font-weight:800;color:#04140a;background:var(--green);border-radius:10px;padding:4px 10px;white-space:nowrap}
+
+/* finger demo */
+.fp-row{display:flex;align-items:center;justify-content:center;gap:28px;height:100%;min-height:300px;padding:20px;flex-wrap:wrap}
+.fp{position:relative;width:130px;height:160px}
+.fp svg{width:100%;height:100%}
+.fp .ridge{fill:none;stroke:rgba(0,212,255,.25);stroke-width:3;stroke-linecap:round}
+.fp .ridge.fill{stroke:var(--cyan);stroke-dasharray:300;stroke-dashoffset:300;animation:ridge 4s ease-in-out infinite;filter:drop-shadow(0 0 4px var(--cyan))}
+@keyframes ridge{0%,10%{stroke-dashoffset:300}55%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:300}}
+.fp-presses{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.fp-presses i{width:12px;height:12px;border-radius:50%;border:2px solid var(--cyan);animation:press 4s infinite}
+.fp-presses i:nth-child(2){animation-delay:.5s}.fp-presses i:nth-child(3){animation-delay:1s}
+@keyframes press{0%,20%{background:transparent}35%,85%{background:var(--cyan)}100%{background:transparent}}
+.brands{display:grid;gap:8px;min-width:170px}
+.brand{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.03)}
+.brand .led{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:blink 1.6s steps(1) infinite}
+.brand.off .led{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:none}
+
+/* device link demo */
+.link-stage{display:flex;align-items:center;justify-content:space-between;padding:26px 22px;gap:10px;min-height:300px}
+.node{width:110px;text-align:center;flex:0 0 110px}
+.node .box{height:96px;border-radius:18px;border:1px solid var(--line);background:linear-gradient(145deg,rgba(0,212,255,.12),rgba(139,63,255,.12));display:flex;align-items:center;justify-content:center;font-size:38px;margin-bottom:8px}
+.node b{font-size:13px;display:block}.node small{font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+.wire{position:relative;flex:1;height:120px}
+.wire .ln{position:absolute;right:0;left:0;height:2px;background:rgba(0,212,255,.22)}
+.wire .ln.a{top:38px}.wire .ln.b{top:82px}
+.pkt{position:absolute;font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:7px;white-space:nowrap}
+.pkt.r{top:27px;color:#04140a;background:var(--green);animation:toL 3s linear infinite}
+.pkt.r2{top:27px;color:#04140a;background:var(--green);animation:toL 3s linear infinite 1.5s}
+.pkt.q{top:71px;color:#fff;background:var(--purple);animation:toR 3s linear infinite .7s}
+@keyframes toL{0%{right:0;opacity:0}10%{opacity:1}90%{opacity:1}100%{right:calc(100% - 60px);opacity:0}}
+@keyframes toR{0%{right:calc(100% - 60px);opacity:0}10%{opacity:1}90%{opacity:1}100%{right:0;opacity:0}}
+.wire .cap{position:absolute;bottom:-6px;right:0;left:0;text-align:center;font-size:11px;color:var(--text2)}
+
+/* ===== GALLERY ===== */
+.gal{margin:10px auto 0;max-width:980px}
+.gal-tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 0 16px}
+.gal-tabs button{all:unset;cursor:pointer;font-size:13.5px;font-weight:800;color:#d6e6f5;padding:8px 16px;border-radius:24px;border:1px solid rgba(0,212,255,.3);background:rgba(0,212,255,.06);transition:.25s}
+.gal-tabs button:hover{color:#fff;border-color:var(--cyan)}
+.gal-tabs button.on{color:#04070d;background:linear-gradient(135deg,var(--cyan),var(--green));border-color:transparent;box-shadow:0 0 18px rgba(0,212,255,.65)}
+.gal-tabs button i{font-style:normal;font-size:11px;opacity:.75;margin-inline-start:4px}
+.gal-main{position:relative;border-radius:20px;overflow:hidden;border:1px solid rgba(0,212,255,.35);box-shadow:0 0 30px rgba(0,212,255,.18);background:radial-gradient(circle at 50% 40%,#0c1830,#050a14);cursor:zoom-in;aspect-ratio:16/10}
+.gal-main img{display:block;width:100%;height:100%;object-fit:contain;transition:opacity .3s}
+.gal-main .zoom{position:absolute;top:12px;left:12px;font-size:12px;font-weight:800;color:#04070d;background:linear-gradient(135deg,var(--cyan),var(--green));padding:4px 12px;border-radius:20px;box-shadow:0 0 14px rgba(0,212,255,.6)}
+.gal-main .cnt{position:absolute;bottom:12px;left:12px;font-size:12px;font-weight:800;color:#fff;background:rgba(0,0,0,.6);padding:4px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.18)}
+.gnav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:1px solid rgba(0,212,255,.55);background:rgba(4,10,20,.75);color:#fff;font-size:22px;cursor:pointer;box-shadow:0 0 14px rgba(0,212,255,.45);display:flex;align-items:center;justify-content:center;z-index:2;transition:.2s}
+.gnav:hover{background:var(--cyan);color:#04070d}
+.gnav.pv{right:12px}.gnav.nx{left:12px}
+.gal-cap{margin-top:14px;text-align:center;min-height:62px}
+.gal-cap b{display:block;font-size:17px;color:#fff;margin-bottom:4px}
+.gal-cap span{font-size:13.5px;color:#d6e6f5;line-height:1.8}
+.gal-thumbs{display:flex;gap:10px;margin-top:14px;overflow-x:auto;padding:6px 4px 10px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,.5) transparent}
+.gal-thumbs button{all:unset;flex:0 0 132px;cursor:pointer;border-radius:12px;overflow:hidden;border:2px solid transparent;opacity:.55;transition:.3s;background:#050a14;aspect-ratio:16/10;display:block}
+.gal-thumbs button img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+.gal-thumbs button:hover{opacity:.9}
+.gal-thumbs button.on{opacity:1;border-color:var(--cyan);box-shadow:0 0 16px rgba(0,212,255,.6)}
+.gal-note{text-align:center;font-size:11.5px;color:#9fb3c8;margin-top:8px;line-height:1.8}
+.lb{position:fixed;inset:0;z-index:9999;background:rgba(2,5,10,.95);display:none;flex-direction:column;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.lb.on{display:flex}
+.lb img{max-width:100%;max-height:86vh;border-radius:10px;box-shadow:0 0 40px rgba(0,212,255,.35);background:#fff;cursor:zoom-in}
+.lb.full{justify-content:flex-start}
+.lb.full img{max-width:none;max-height:none;cursor:zoom-out}
+.lb .x{position:fixed;top:14px;left:14px;width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:20px;cursor:pointer;z-index:3}
+.lb .gnav{position:fixed}
+.lb .lbcap{color:#e8f2ff;font-size:14px;font-weight:700;margin-top:10px;text-align:center}
+@media (max-width:640px){.gal-thumbs button{flex-basis:96px}.gnav{width:36px;height:36px;font-size:18px}.gal-tabs button{font-size:12.5px;padding:7px 12px}}
+
+/* ===== CATEGORIES ===== */
+.cat{margin-top:70px;scroll-margin-top:80px}
+.cat-head{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.cat-ico{width:52px;height:52px;flex:0 0 52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:linear-gradient(145deg,rgba(0,212,255,.16),rgba(139,63,255,.16));border:1px solid var(--line)}
+.cat-head h2{font-size:clamp(19px,3.4vw,26px);font-weight:800;color:#fff;text-shadow:0 0 18px rgba(0,212,255,.25)}
+.cat-head .cat-desc{font-size:12.5px;color:var(--text2);margin-top:2px}
+.cat-count{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);border:1px solid var(--line);border-radius:20px;padding:3px 12px;margin-right:auto;white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid var(--line);border-radius:16px;padding:18px 18px 14px;position:relative;overflow:hidden;cursor:pointer;
+  opacity:0;transform:translateY(26px) scale(.97);transition:opacity .6s cubic-bezier(.2,.8,.2,1),transform .6s cubic-bezier(.2,.8,.2,1),border-color .3s,background .3s;outline:none}
+.card.show{opacity:1;transform:none}
+.card:hover,.card:focus-visible{border-color:rgba(0,212,255,.55);background:linear-gradient(160deg,rgba(0,212,255,.09),rgba(139,63,255,.05))}
+.card::before{content:'';position:absolute;top:-40%;right:-40%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.18),transparent 70%);opacity:0;transition:opacity .4s}
+.card:hover::before{opacity:1}
+.card .ico{font-size:22px;margin-bottom:10px;display:inline-block;transition:transform .4s}
+.card:hover .ico{transform:scale(1.18) rotate(-6deg)}
+.card h3{font-size:15.5px;font-weight:800;margin-bottom:6px;line-height:1.4}
+.card p{font-size:13.5px;color:#d6e6f5;line-height:1.8}
+.card .new{position:absolute;top:14px;left:14px;font-size:10.5px;font-weight:800;color:#04140a;background:var(--green);border-radius:10px;padding:1px 8px;box-shadow:0 0 10px rgba(0,255,157,.6)}
+.card .more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.card .more>div{overflow:hidden}
+.card .more p{margin-top:10px;padding-top:10px;border-top:1px dashed rgba(0,212,255,.35);color:#9eeaff;font-size:13px}
+.card.open .more{grid-template-rows:1fr}
+.card .hint{margin-top:10px;font-size:12px;color:#5fe3ff;text-shadow:0 0 10px rgba(0,212,255,.5);font-weight:800;display:flex;align-items:center;gap:6px}
+.card .hint::after{content:'';width:6px;height:6px;border-left:2px solid var(--cyan);border-bottom:2px solid var(--cyan);transform:rotate(-45deg);transition:.3s;margin-top:-3px}
+.card.open .hint::after{transform:rotate(135deg);margin-top:3px}
+.card.hide{display:none}
+.cat.hide{display:none}
+.empty{display:none;text-align:center;color:var(--text2);padding:60px 0;font-size:15px}
+
+/* ===== FOOTER ===== */
+.footer{position:relative;z-index:1;text-align:center;padding:70px 16px 90px;color:var(--text2);font-size:13px}
+.footer .brand-t{font-family:'JetBrains Mono',monospace;color:var(--cyan);letter-spacing:1px;font-size:12px;margin-bottom:10px}
+.footer .big{font-size:clamp(20px,3.4vw,26px);font-weight:900;color:var(--text);margin-bottom:8px}
+.wa-btn{margin-top:26px;display:inline-flex;align-items:center;gap:10px;padding:14px 30px;border-radius:40px;background:linear-gradient(135deg,#25D366,#1aa14a);color:#04140a;font-weight:800;font-size:15px;text-decoration:none;animation:waPulse 2.4s ease-out infinite;transition:transform .25s}
+.wa-btn:hover{transform:translateY(-3px) scale(1.03)}
+@keyframes waPulse{0%{box-shadow:0 0 22px rgba(37,211,102,.7),0 0 0 0 rgba(37,211,102,.6)}70%{box-shadow:0 0 30px rgba(37,211,102,.5),0 0 0 18px rgba(37,211,102,0)}100%{box-shadow:0 0 22px rgba(37,211,102,.7),0 0 0 0 rgba(37,211,102,0)}}
+.btns{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:26px}
+.btns .wa-btn{margin-top:0}
+.dl-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 34px;border-radius:40px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;font-weight:900;font-size:16px;text-decoration:none;position:relative;overflow:hidden;animation:dlGlow 2.6s ease-in-out infinite;transition:transform .25s}
+.dl-btn:hover{transform:translateY(-3px) scale(1.04)}
+.dl-btn::after{content:'';position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);animation:shine 3s ease-in-out infinite}
+.dl-btn .arr{display:inline-block;animation:dlArr 1.4s ease-in-out infinite}
+@keyframes dlGlow{0%,100%{box-shadow:0 0 18px rgba(0,212,255,.65),0 0 40px rgba(139,63,255,.35)}50%{box-shadow:0 0 30px rgba(0,212,255,.9),0 0 60px rgba(139,63,255,.55)}}
+@keyframes shine{0%{left:-60%}60%,100%{left:130%}}
+@keyframes dlArr{0%,100%{transform:translateY(-2px)}50%{transform:translateY(3px)}}
+.dl-sm{font-size:12px;color:#bfe9ff;margin-top:-4px}
+.totop{position:fixed;bottom:20px;left:20px;z-index:50;width:44px;height:44px;border-radius:14px;border:1px solid rgba(0,212,255,.5);box-shadow:0 0 14px rgba(0,212,255,.4);background:rgba(4,7,13,.85);color:var(--cyan);font-size:18px;cursor:pointer;opacity:0;pointer-events:none;transition:.3s}
+.totop.on{opacity:1;pointer-events:auto}
+
+@media (max-width:860px){
+  .spot,.spot.rev{grid-template-columns:1fr;padding:20px}
+  .spot.rev .spot-txt{order:0}
+  .journey{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:26px}
+  .journey .track,.journey .runner{display:none}
+  .nav-in{flex-direction:column;align-items:stretch}
+  .search{flex:1 1 auto}
+}
 @media (max-width:520px){
-  .cat-head{gap:10px;}
-  .cat-ico{width:44px;height:44px;font-size:20px;}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .journey{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat-head{gap:10px}.cat-ico{width:44px;height:44px;flex-basis:44px;font-size:20px}
+  .cat-head .cat-desc{display:none}
+  .link-stage{padding:20px 10px}.node{width:84px;flex-basis:84px}.node .box{height:76px;font-size:30px}
+  .fp-row{gap:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .card,.reveal{opacity:1;transform:none}
 }
 </style>
 </head>
 <body>
-
 <div class="progress-bar" id="progressBar"></div>
 <div class="bg-grid"></div>
+<div class="orb o1"></div><div class="orb o2"></div>
 
 <!-- HERO -->
 <section class="hero">
   <div class="ecg-wrap">
     <svg class="ecg-line" viewBox="0 0 800 120" preserveAspectRatio="none">
-      <path d="M0,60 L60,60 L80,60 L95,20 L110,100 L125,40 L140,60 L200,60 L260,60 L280,60 L295,20 L310,100 L325,40 L340,60 L400,60
-               L460,60 L480,60 L495,20 L510,100 L525,40 L540,60 L600,60 L660,60 L680,60 L695,20 L710,100 L725,40 L740,60 L800,60"/>
+      <path d="M0,60 L60,60 L80,60 L95,20 L110,100 L125,40 L140,60 L200,60 L260,60 L280,60 L295,20 L310,100 L325,40 L340,60 L400,60 L460,60 L480,60 L495,20 L510,100 L525,40 L540,60 L600,60 L660,60 L680,60 L695,20 L710,100 L725,40 L740,60 L800,60"/>
     </svg>
   </div>
   <div class="logo-pulse">🩺</div>
   <h1>MedLab Pro</h1>
-  <p class="sub">نظام إدارة مختبر طبي متكامل — من استقبال المريض إلى تسليم النتيجة، بكل ما يحتاجه مختبرك في برنامج واحد</p>
+  <p class="sub">نظام إدارة مختبر طبي متكامل — من لحظة دخول المراجع ومعرفته بوجهه، إلى وصول النتيجة من الجهاز وتسليمها على واتساب، كل شيء في برنامج واحد</p>
+  <div class="typed"><span id="typed"></span><span class="cur"></span></div>
   <div class="tagline">MADE FOR REAL LABS · OFFLINE-FIRST · MULTI-DEVICE</div>
+  <div class="stats">
+    <div class="stat"><b data-count="0" id="statFeatures">0</b><span>ميزة</span></div>
+    <div class="stat"><b data-count="0" id="statCats">0</b><span>قسم</span></div>
+    <div class="stat"><b data-count="10" data-plus="1">0</b><span>قالب طباعة CBC</span></div>
+    <div class="stat"><b data-count="100" data-suf="%">0</b><span>يعمل بدون إنترنت</span></div>
+  </div>
   <div class="scrolldown">مرر لاستكشاف الميزات<div class="chevron"></div></div>
 </section>
 
-<div class="wrap" id="content"></div>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-in">
+    <label class="search">🔎<input id="q" type="search" placeholder="ابحث عن ميزة… (واتساب، بصمة، CBC)" autocomplete="off"></label>
+    <div class="chips" id="chips"></div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- JOURNEY -->
+  <h2 class="sec-title reveal">رحلة العينة <span class="g">خطوة بخطوة</span></h2>
+  <p class="sec-sub reveal">هكذا يمر المراجع داخل المختبر مع MedLab Pro — كل مرحلة مؤتمتة وتقلل الخطأ والوقت</p>
+  <div class="journey reveal" id="journey">
+    <div class="track"></div><div class="runner"></div>
+    <div class="step"><div class="dot">📷</div><h4>التعرّف</h4><p>الكاميرا أو البصمة تعرف المراجع فوراً</p></div>
+    <div class="step"><div class="dot">📝</div><h4>التسجيل</h4><p>اختيار التحاليل والباقة والطبيب</p></div>
+    <div class="step"><div class="dot">🏷️</div><h4>الملصق</h4><p>باركود للعينة وورقة عمل ووصل</p></div>
+    <div class="step"><div class="dot">🔬</div><h4>الجهاز</h4><p>النتائج تصل تلقائياً من المحلل</p></div>
+    <div class="step"><div class="dot">✅</div><h4>المراجعة</h4><p>معاينة، Delta Check، تنبيه للحرج</p></div>
+    <div class="step"><div class="dot">📲</div><h4>التسليم</h4><p>طباعة أو PDF أو واتساب أو بوابة</p></div>
+  </div>
+
+  <!-- SPOTLIGHT: FACE -->
+  <h2 class="sec-title reveal">الجديد في <span class="g">MedLab Pro</span></h2>
+  <p class="sec-sub reveal">أهم الإضافات الأخيرة — شاهدها وهي تعمل</p>
+
+  <div class="spot reveal">
+    <div class="spot-txt">
+      <span class="badge-new">✨ جديد</span>
+      <h3>بصمة الوجه للمراجعين — يعرفه البرنامج قبل أن يتكلم</h3>
+      <p class="lead">كاميرا الاستقبال تلتقط وجه المراجع تلقائياً وبسرعة، بدون طلب رمش أو وقوف طويل. إذا كان مراجعاً سابقاً يظهر اسمه وعمره وصورته كاقتراح، وبنقرة واحدة تُملأ بياناته وينتقل مباشرة لاختيار التحاليل.</p>
+      <ul class="ticks">
+        <li>مراجع جديد؟ يظهر وجهه في لوحة «وجوه جديدة»، تنقر عليه وتُدخل بياناته فيُحفظ الوجه مع ملفه</li>
+        <li>كل شخص يظهر <b>مرة واحدة فقط</b> في شاشة الصور مهما تحرك أمام الكاميرا</li>
+        <li>يستبعد وجوه موظفي المختبر تلقائياً</li>
+        <li>يعمل بدون إنترنت، والبيانات محفوظة محلياً وتُزامن بين حاسبات الشبكة</li>
+        <li>يعيد تشغيل الكاميرا تلقائياً إذا توقفت أو انفصلت — بدون إعادة تشغيل البرنامج</li>
+      </ul>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="cam-head"><span class="rec">LIVE · CAM 01</span><span>FACE-ID</span></div>
+      <div class="face-box">
+        <div class="face-frame"></div>
+        <svg viewBox="0 0 150 180">
+          <ellipse cx="75" cy="88" rx="52" ry="66" fill="rgba(0,212,255,.06)" stroke="rgba(0,212,255,.35)" stroke-width="1.5"/>
+          <path d="M48 72 q10 -8 20 0 M82 72 q10 -8 20 0" stroke="rgba(238,244,251,.6)" stroke-width="2" fill="none"/>
+          <circle cx="58" cy="80" r="4" fill="rgba(238,244,251,.75)"/><circle cx="92" cy="80" r="4" fill="rgba(238,244,251,.75)"/>
+          <path d="M75 86 L70 108 L80 108" stroke="rgba(238,244,251,.5)" stroke-width="2" fill="none"/>
+          <path d="M60 124 q15 10 30 0" stroke="rgba(238,244,251,.6)" stroke-width="2.4" fill="none"/>
+          <g class="lm">
+            <circle cx="48" cy="72" r="2"/><circle cx="58" cy="68" r="2"/><circle cx="68" cy="72" r="2"/>
+            <circle cx="82" cy="72" r="2"/><circle cx="92" cy="68" r="2"/><circle cx="102" cy="72" r="2"/>
+            <circle cx="52" cy="80" r="2"/><circle cx="64" cy="80" r="2"/><circle cx="86" cy="80" r="2"/><circle cx="98" cy="80" r="2"/>
+            <circle cx="75" cy="92" r="2"/><circle cx="70" cy="108" r="2"/><circle cx="80" cy="108" r="2"/>
+            <circle cx="60" cy="124" r="2"/><circle cx="75" cy="130" r="2"/><circle cx="90" cy="124" r="2"/>
+            <circle cx="30" cy="96" r="2"/><circle cx="120" cy="96" r="2"/><circle cx="42" cy="134" r="2"/><circle cx="108" cy="134" r="2"/><circle cx="75" cy="152" r="2"/>
+          </g>
+        </svg>
+        <div class="scanline"></div>
+      </div>
+      <div class="match">
+        <div class="av">👤</div>
+        <div><b>أحمد علي حسن</b><small>34 سنة · تطابق 97%</small></div>
+        <span class="go">اختيار ←</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPOTLIGHT: FINGER -->
+  <div class="spot rev reveal">
+    <div class="spot-txt">
+      <span class="badge-new">✨ جديد</span>
+      <h3>بصمة الإصبع — مدمجة داخل البرنامج بدون برامج إضافية</h3>
+      <p class="lead">وصّل جهاز البصمة بمنفذ USB وثبّت تعريفه فقط — MedLab Pro يكتشف نوع الجهاز تلقائياً ويبدأ العمل. التسجيل بثلاث ضغطات، والتعرّف لحظي عند وضع الإصبع.</p>
+      <ul class="ticks">
+        <li>يدعم أجهزة <b>ZKTeco</b> (ZK9500 · ZK4500 · SLK20R) الأكثر انتشاراً في العراق</li>
+        <li>يدعم أجهزة <b>SecuGen Hamster</b> بأنواعها</li>
+        <li>كشف تلقائي لنوع الجهاز المتصل ورسالة واضحة إذا كان التعريف ناقصاً</li>
+        <li>عامل البصمة يعمل بعملية منفصلة — أي خلل بالجهاز لا يوقف البرنامج ويُعاد تشغيله تلقائياً</li>
+      </ul>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="fp-row">
+        <div>
+          <div class="fp">
+            <svg viewBox="0 0 130 160">
+              <g class="ridge"><path d="M65 20 C30 20 18 50 18 80 C18 115 35 140 50 150"/><path d="M65 32 C38 32 30 56 30 80 C30 110 42 130 55 142"/><path d="M65 44 C45 44 42 64 42 82 C42 105 50 120 60 132"/><path d="M65 56 C54 56 54 70 54 84 C54 100 58 110 66 120"/><path d="M65 20 C100 20 112 50 112 80 C112 110 100 130 88 146"/><path d="M65 32 C92 32 100 56 100 80 C100 104 92 122 80 136"/><path d="M65 44 C85 44 88 64 88 82 C88 100 82 114 74 126"/><path d="M66 68 C72 72 76 80 74 96"/></g>
+              <g class="ridge fill"><path d="M65 20 C30 20 18 50 18 80 C18 115 35 140 50 150"/><path d="M65 32 C38 32 30 56 30 80 C30 110 42 130 55 142"/><path d="M65 44 C45 44 42 64 42 82 C42 105 50 120 60 132"/><path d="M65 56 C54 56 54 70 54 84 C54 100 58 110 66 120"/><path d="M65 20 C100 20 112 50 112 80 C112 110 100 130 88 146"/><path d="M65 32 C92 32 100 56 100 80 C100 104 92 122 80 136"/><path d="M65 44 C85 44 88 64 88 82 C88 100 82 114 74 126"/><path d="M66 68 C72 72 76 80 74 96"/></g>
+            </svg>
+          </div>
+          <div class="fp-presses"><i></i><i></i><i></i></div>
+        </div>
+        <div class="brands">
+          <div class="brand"><span class="led"></span>ZKTeco ZK9500</div>
+          <div class="brand"><span class="led"></span>ZKTeco ZK4500</div>
+          <div class="brand"><span class="led"></span>ZKTeco SLK20R</div>
+          <div class="brand"><span class="led"></span>SecuGen Hamster</div>
+          <div class="brand off"><span class="led"></span>كشف تلقائي للجهاز</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPOTLIGHT: DEVICES -->
+  <div class="spot reveal">
+    <div class="spot-txt">
+      <span class="badge-new">🔌 ربط ثنائي الاتجاه</span>
+      <h3>الأجهزة تسأل البرنامج… والبرنامج يجيب</h3>
+      <p class="lead">لا مزيد من إدخال النتائج يدوياً. المحلل يقرأ باركود العينة ويطلب قائمة تحاليلها من MedLab Pro (Host Query)، ثم يرسل النتائج مباشرة إلى ملف المراجع — مع المخططات البيانية (Histograms) لتحليل الدم.</p>
+      <ul class="ticks">
+        <li>Mindray BC-5000 / BC-5150 / BC-6000 مع رسومات WBC · RBC · PLT</li>
+        <li>Zybio Z60 / Z3 · Snibe CL-900i · Roche cobas c111 · Sysmex</li>
+        <li>HL7 (MLLP) و ASTM عبر الشبكة TCP أو المنفذ التسلسلي Serial</li>
+        <li>عدة أجهزة بنفس الوقت، كل جهاز بإعداده المستقل</li>
+      </ul>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="link-stage">
+        <div class="node"><div class="box">🔬</div><b>المحلل</b><small>BC-6000</small></div>
+        <div class="wire">
+          <div class="ln a"></div><div class="ln b"></div>
+          <span class="pkt r">WBC 7.2</span><span class="pkt r2">HGB 13.4</span>
+          <span class="pkt q">QRY #1042</span>
+          <div class="cap">HL7 · ASTM · TCP · Serial</div>
+        </div>
+        <div class="node"><div class="box">🩺</div><b>MedLab Pro</b><small>LIS</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GALLERY -->
+  <h2 class="sec-title reveal" id="gallery" style="scroll-margin-top:90px">نماذج من <span class="g">داخل النظام</span></h2>
+  <p class="sec-sub reveal">لقطات حقيقية من شاشات MedLab Pro — اضغط على أي صورة لتكبيرها</p>
+  <div class="gal reveal">
+    <div class="gal-tabs" id="galTabs"></div>
+    <div class="gal-main" id="galMain"><img id="galImg" src="samples/dashboard.webp" alt="لوحة التحكم"><span class="zoom">🔍 اضغط للتكبير</span><span class="cnt" id="galCnt"></span><button class="gnav pv" id="gPrev" aria-label="السابق">›</button><button class="gnav nx" id="gNext" aria-label="التالي">‹</button></div>
+    <div class="gal-cap"><b id="galT"></b><span id="galD"></span></div>
+    <div class="gal-thumbs" id="galThumbs"></div>
+    <div class="gal-note">* لقطات حقيقية من البرنامج — أسماء المراجعين وأرقامهم مُموّهة لحماية خصوصيتهم، وبعض القيم بيانات تجريبية للعرض</div>
+  </div>
+  <div class="lb" id="lb"><button class="x" id="lbX" aria-label="إغلاق">✕</button><button class="gnav pv" id="lbPrev" aria-label="السابق">›</button><button class="gnav nx" id="lbNext" aria-label="التالي">‹</button><img id="lbImg" alt=""><div class="lbcap" id="lbCap"></div></div>
+
+  <!-- ALL FEATURES -->
+  <h2 class="sec-title reveal" id="all">كل <span class="g">الميزات</span></h2>
+  <p class="sec-sub reveal">اضغط على أي ميزة لقراءة شرح مختصر عن طريقة عملها</p>
+  <div id="content"></div>
+  <div class="empty" id="empty">لا توجد ميزة تطابق بحثك 🔍</div>
+</div>
 
 <div class="footer">
-  <div class="brand">MEDLAB PRO — LABORATORY INFORMATION SYSTEM</div>
+  <div class="brand-t">MEDLAB PRO — LABORATORY INFORMATION SYSTEM</div>
   <div class="big">مختبرك، بكل تفاصيله، في مكان واحد</div>
-  <a href="https://wa.me/9647807632797" target="_blank" class="wa-btn">
+  <p>اطلب نسخة تجريبية أو استفسر عن أي ميزة</p>
+  <div class="btns">
+  <a href="https://wa.me/9647807632797" target="_blank" rel="noopener" class="wa-btn">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-1.746-.873-2.888-1.556-4.036-3.53-.305-.524.305-.487.873-1.62.098-.198.05-.371-.05-.52-.099-.148-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.372-.01-.571-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.05 3.133 4.978 4.27 2.928 1.14 2.928.76 3.472.71.545-.05 1.759-.718 2.006-1.413.248-.694.248-1.29.173-1.414-.074-.124-.272-.198-.57-.347z"/><path d="M12.05 22c-1.75 0-3.46-.47-4.95-1.36l-.35-.21-3.66.96.98-3.57-.23-.36A9.9 9.9 0 0 1 2.05 12C2.05 6.5 6.55 2 12.05 2s10 4.5 10 10-4.5 10-10 10zm0-18.5C7.36 3.5 3.55 7.31 3.55 12c0 1.7.5 3.3 1.35 4.65l.2.32-.6 2.2 2.25-.59.32.19c1.3.77 2.8 1.18 4.28 1.18 4.69 0 8.5-3.81 8.5-8.5S16.74 3.5 12.05 3.5z"/></svg>
     تواصل معنا عبر واتساب
   </a>
+  <a href="https://saifshaker819-create.github.io/MedLabPro-Download/" target="_blank" rel="noopener" class="dl-btn"><span class="arr">⬇️</span> تنزيل البرنامج</a>
+  <div class="dl-sm">نسخة Windows — تنزيل مباشر</div>
+  </div>
 </div>
+<button class="totop" id="totop" aria-label="للأعلى">↑</button>
 
 <script>
 const DATA = [
-  {
-    icon:'🖥️', title:'لوحة التحكم والإحصائيات', cards:[
-      {i:'📊', t:'لوحة تحكم شاملة', d:'نظرة سريعة على عدد المرضى، الطلبات، النتائج المكتملة والحرجة لحظياً.'},
-      {i:'⚠️', t:'تنبيهات النتائج الحرجة', d:'سجل مخصص للنتائج الخطرة مرتب من الأحدث للأقدم لمتابعة فورية.'},
-      {i:'📋', t:'قائمة الطلبات المباشرة', d:'عرض جميع الطلبات مع بحث سريع وفتح مباشر لكل طلب.'},
-      {i:'🌙', t:'وضع ليلي بتصميم نيون', d:'واجهة عصرية داكنة مصممة لراحة العين خلال ساعات العمل الطويلة.'},
-    ]
-  },
-  {
-    icon:'🧑‍🤝‍🧑', title:'إدارة المرضى والطلبات', cards:[
-      {i:'👤', t:'ملفات المرضى', d:'تسجيل كامل ببيانات المريض، العمر، الجنس، والتاريخ الطبي.'},
-      {i:'🆔', t:'تعريف دقيق بالـ ID', d:'البحث والتحديد يعتمدان على رقم تعريف فريد لكل مريض، لا على رقم الهاتف، لمنع الالتباس.'},
-      {i:'👨‍⚕️', t:'إدارة الأطباء المحوّلين', d:'ربط كل طلب بالطبيب المحوّل لتسهيل التقارير والفوترة.'},
-      {i:'📦', t:'الباقات الطبية', d:'تجميع عدة تحاليل ضمن باقة واحدة بسعر وخصائص مخصصة.'},
-      {i:'🔖', t:'باركود وQR لكل عينة', d:'توليد وطباعة ملصقات باركود لتتبع العينة من الاستقبال حتى النتيجة.'},
-    ]
-  },
-  {
-    icon:'🧪', title:'الفحوصات والتحاليل المتخصصة', cards:[
-      {i:'🩸', t:'تحليل CBC وربط الأجهزة', d:'استقبال نتائج تحليل الدم الشامل مباشرة من محلل الدم مع تنسيق طباعة ملوّن للقيم الشاذة.'},
-      {i:'🧫', t:'الزرع والحساسية (Culture)', d:'وحدة كاملة لتسجيل نتائج الزرع البكتيري وحساسية المضادات الحيوية.'},
-      {i:'💧', t:'تحليل البول والبراز', d:'نماذج مخصصة لتحليل البول (UA) والبراز (Stool) بقيم مرجعية دقيقة.'},
-      {i:'🧬', t:'تحليل السائل المنوي وتجزؤ DNA', d:'وحدات متقدمة لتحليل السائل المنوي حسب معايير WHO 2021، وتجزؤ الحمض النووي، وتنشيط IUI.'},
-      {i:'⚗️', t:'ESR وحسابات HOMA-IR', d:'حساب معدل ترسيب الدم ومؤشر مقاومة الإنسولين تلقائياً من نتائج التحاليل المرتبطة.'},
-      {i:'✅', t:'ضبط الجودة (Quality Control)', d:'سجل جودة مستقل لمراقبة أداء الأجهزة والتحاليل عبر الزمن.'},
-    ]
-  },
-  {
-    icon:'🔌', title:'ربط أجهزة المختبر (LIS)', cards:[
-      {i:'📡', t:'دعم HL7 و ASTM', d:'اتصال مباشر مع محللات الدم والكيمياء عبر بروتوكولي HL7/MLLP و ASTM.'},
-      {i:'🔀', t:'إدارة أجهزة متعددة بآن واحد', d:'كل جهاز بوضعه الخاص (Client/Server/Serial) واتصاله المستقل، دون تعارض بين الأجهزة.'},
-      {i:'🧭', t:'معالج إعداد الأجهزة', d:'واجهة إرشادية لاختيار وضع كل جهاز وبروتوكوله بخطوات مبسطة.'},
-      {i:'🔗', t:'ربط أكواد التحاليل (Mapping)', d:'مطابقة أكواد التحاليل بين البرنامج والجهاز لضمان وصول النتيجة الصحيحة للتحليل الصحيح.'},
-      {i:'📥', t:'سجل استقبال ودفع النتائج', d:'سجل تفصيلي لكل رسالة واردة أو مرسلة من وإلى الأجهزة لتتبع أي خلل بسهولة.'},
-      {i:'🔒', t:'حماية بكلمة مرور مخصصة', d:'إعدادات ربط الأجهزة محمية برمز سري خاص لمنع أي تعديل غير مقصود.'},
-    ]
-  },
-  {
-    icon:'🖨️', title:'الطباعة والتقارير', cards:[
-      {i:'🧾', t:'تقارير احترافية متعددة الصفحات', d:'طباعة نتائج مرتبة بترويسة وتذييل وشعار المختبر، مع تلوين القيم غير الطبيعية.'},
-      {i:'🏷️', t:'طباعة ملصقات صامتة', d:'طباعة باركود Code 128C مباشرة دون نوافذ تأكيد، بأحجام قابلة للتخصيص.'},
-      {i:'📄', t:'تصدير PDF فوري', d:'حفظ أي تقرير كملف PDF جاهز للأرشفة أو المشاركة.'},
-      {i:'💧', t:'علامة مائية وتوقيع رقمي', d:'إضافة علامة مائية وتوقيع الطبيب/الفني تلقائياً على كل تقرير.'},
-      {i:'🎨', t:'تخصيص شامل للتقرير', d:'التحكم بارتفاع الرأس والتذييل، الخطوط، والألوان لتتطابق التقارير مع هوية المختبر.'},
-    ]
-  },
-  {
-    icon:'💬', title:'التواصل مع المرضى', cards:[
-      {i:'📱', t:'مشاركة النتائج عبر واتساب', d:'إرسال ملف النتيجة مباشرة للمريض بضغطة واحدة عبر واتساب.'},
-      {i:'🖥️', t:'شاشة قاعة الانتظار', d:'شاشة عرض مباشرة تُظهر حالة الطلبات للمرضى في الاستقبال.'},
-      {i:'🔍', t:'بوابة استعلام نتائج للمريض', d:'صفحة مخصصة يدخل منها المريض لرؤية نتائجه دون الحاجة لموظف.'},
-      {i:'💬', t:'محادثات داخلية بين الفروع', d:'نظام مراسلة بين المستخدمين مع إرسال ملفات ونسخ احتياطية مباشرة.'},
-    ]
-  },
-  {
-    icon:'💰', title:'الفوترة والمخزون', cards:[
-      {i:'🧮', t:'نظام فوترة متكامل', d:'إصدار فواتير مرتبطة بالطلبات والباقات مع قسم حسابات مستقل.'},
-      {i:'📦', t:'إدارة المخزون والكواشف', d:'تتبع كمية الكواشف والمستلزمات مع تنبيه تلقائي عند نفاذ المخزون.'},
-      {i:'💳', t:'نظام الأقساط', d:'متابعة الدفعات المجدولة مع تمييز المتأخر منها وبحث سريع في السجلات.'},
-      {i:'👥', t:'إدارة رواتب وإجازات الموظفين', d:'تتبع ساعات الإجازة، الإجازات المرضية، وحساب الرواتب بصيغة الدينار العراقي.'},
-    ]
-  },
-  {
-    icon:'☁️', title:'قواعد البيانات والمزامنة', cards:[
-      {i:'🔄', t:'مزامنة سحابية فورية', d:'مزامنة النتائج والطلبات بين النسخة المكتبية والموبايل في الوقت الحقيقي.'},
-      {i:'💾', t:'عمل بلا إنترنت (Offline-First)', d:'يعمل البرنامج بالكامل محلياً ويُزامن عند توفر الاتصال.'},
-      {i:'🖧', t:'خادم شبكة محلي (LAN)', d:'مزامنة بين عدة أجهزة على نفس الشبكة عبر خادم SQLite مركزي دون الحاجة للإنترنت.'},
-      {i:'📤', t:'استيراد وتصدير قاعدة البيانات', d:'نسخ احتياطي واسترجاع كامل للبيانات بضغطة واحدة.'},
-      {i:'🗂️', t:'نسخ احتياطي تلقائي', d:'حفظ نسخ احتياطية دورية تلقائياً في مجلد يختاره المستخدم.'},
-    ]
-  },
-  {
-    icon:'🛡️', title:'الأمان والصلاحيات', cards:[
-      {i:'🧩', t:'صلاحيات متعددة المستويات', d:'تحكم دقيق بما يراه ويعدّله كل مستخدم حسب دوره الوظيفي.'},
-      {i:'📶', t:'إدارة الجلسات النشطة', d:'عرض كل الأجهزة المسجّلة دخولاً وإمكانية إنهاء أي جلسة عن بُعد.'},
-      {i:'🖥️', t:'لوحة تحكم إدارية شاملة', d:'مراقبة وتشخيص عام للنظام، تمديد الاشتراكات، وإرسال إشعارات لكل المستخدمين.'},
-    ]
-  },
-  {
-    icon:'📲', title:'تجربة الاستخدام', cards:[
-      {i:'📱', t:'تطبيق PWA قابل للتثبيت', d:'يعمل كتطبيق مستقل على الموبايل وسطح المكتب بأيقونة مدمجة.'},
-      {i:'⚡', t:'أداء محسّن للسرعة', d:'حزمة تحسينات أداء شاملة تجعل تجربة الاستخدام سريعة كالتطبيقات الأصلية.'},
-      {i:'🌐', t:'دعم كامل للعربية', d:'واجهة بالعربية الكاملة مع اتجاه RTL في كل الشاشات والتقارير.'},
-      {i:'🖥️', t:'نسخة سطح مكتب Electron', d:'تطبيق مكتبي متكامل يعمل على Windows وmacOS بدون متصفح.'},
-    ]
-  },
+  { id:'reception', icon:'🧑‍🤝‍🧑', title:'الاستقبال وإدارة المراجعين', desc:'تسجيل سريع ودقيق بدون تكرار', cards:[
+    {i:'🧭', n:1, t:'معالج تسجيل ذكي', d:'تسجيل المراجع بخطوات مرتبة: البيانات ← التحاليل ← الدفع.', x:'أثناء كتابة الاسم تظهر اقتراحات بالمراجعين السابقين؛ اختيار أحدهم يملأ بياناته ويختصر التسجيل لثوانٍ.'},
+    {i:'🆔', t:'تعريف دقيق بالـ ID', d:'كل مراجع له رقم تعريف فريد، لا يعتمد على رقم الهاتف، لمنع الالتباس.', x:'حتى لو تشارك أفراد العائلة رقم هاتف واحد، يبقى لكل شخص ملفه وتاريخه المستقل.'},
+    {i:'📂', n:1, t:'زيارة ملف المراجع', d:'زر مباشر من شاشة النتائج يفتح ملف المراجع وكل زياراته السابقة.', x:'ينقلك إلى قائمة المراجعين مع البحث باسمه تلقائياً، لمراجعة تاريخه دون الخروج من سير العمل.'},
+    {i:'👨‍⚕️', t:'الأطباء المحوّلون والعمولات', d:'ربط كل طلب بالطبيب المحوّل مع تقارير ونسب عمولة.', x:'تعرف كم مراجعاً حوّل كل طبيب وما يستحقه، مع بوابة خاصة للطبيب لمتابعة نتائج مرضاه.'},
+    {i:'📦', t:'الباقات الطبية', d:'تجميع عدة تحاليل ضمن باقة واحدة بسعر مخصص.', x:'مثل باقة الفحص الشامل أو باقة ما قبل الزواج — اختيار الباقة يضيف كل تحاليلها بنقرة.'},
+    {i:'🔖', t:'باركود لكل عينة', d:'توليد ملصقات باركود لتتبع العينة من السحب حتى النتيجة.', x:'نفس الباركود يقرأه جهاز التحليل ليطلب التحاليل المطلوبة تلقائياً (Host Query).'},
+  ]},
+  { id:'bio', icon:'🧠', title:'التعرّف على المراجع بالوجه والبصمة', desc:'هوية المراجع بدون سؤال', cards:[
+    {i:'📷', n:1, t:'بصمة وجه تلقائية', d:'الكاميرا تلتقط الوجه بسرعة ودقة بدون شرط الرمش.', x:'يستخدم محرك تعرّف يعمل داخل البرنامج بدون إنترنت، ويختار أوضح لقطة للوجه تلقائياً.'},
+    {i:'🆕', n:1, t:'لوحة الوجوه الجديدة', d:'كل وجه غير معروف يظهر في لوحة داخل شاشة التسجيل.', x:'تنقر على الوجه، تُدخل بيانات المراجع، وعند الحفظ يُربط الوجه بملفه ليُعرف تلقائياً في زيارته القادمة.'},
+    {i:'⚡', n:1, t:'اقتراح المراجع المعروف', d:'يظهر الاسم والعمر والصورة، ونقرة واحدة تكمل التسجيل.', x:'تُملأ البيانات وينتقل البرنامج مباشرة لخطوة اختيار التحاليل.'},
+    {i:'🧹', n:1, t:'بدون تكرار', d:'كل شخص يظهر مرة واحدة فقط في شاشة الصور.', x:'اللقطات المتعددة لنفس الشخص تُدمج تلقائياً في بطاقة واحدة، ووجوه الموظفين تُستبعد.'},
+    {i:'☝️', n:1, t:'بصمة الإصبع USB', d:'دعم أجهزة ZKTeco و SecuGen مع كشف تلقائي لنوع الجهاز.', x:'لا حاجة لأي برنامج وسيط: ثبّت تعريف الجهاز فقط. التسجيل بثلاث ضغطات والتعرّف لحظي.'},
+    {i:'🎥', n:1, t:'كاميرا لا تتوقف', d:'مراقبة ذاتية تعيد تشغيل الكاميرا إذا توقفت أو انفصلت.', x:'يدعم كاميرات الويب مثل Logitech C920، ويعيد الاتصال تلقائياً عند فصل الكاميرا وإعادة توصيلها.'},
+    {i:'🔐', n:1, t:'خصوصية ومزامنة', d:'البيانات البيومترية محفوظة محلياً وتُزامن عبر الشبكة فقط.', x:'تُحفظ بصمات الوجه كأرقام رياضية وليس كصور قابلة للاستخدام خارج البرنامج، وتنتقل بين حاسبات المختبر عبر LAN.'},
+  ]},
+  { id:'tests', icon:'🧪', title:'الفحوصات والتحاليل المتخصصة', desc:'نماذج مصممة لكل نوع تحليل', cards:[
+    {i:'🩸', t:'تحليل CBC', d:'استقبال النتائج من محلل الدم مع تلوين القيم الشاذة والمخططات البيانية.', x:'تظهر رسومات WBC و RBC و PLT في التقرير كما يرسلها الجهاز.'},
+    {i:'🧫', t:'الزرع والحساسية', d:'وحدة كاملة لنتائج الزرع البكتيري وحساسية المضادات الحيوية.', x:'اختيار البكتيريا والمضادات مع تصنيف حساس/متوسط/مقاوم وطباعة مرتبة.'},
+    {i:'💧', t:'البول والبراز', d:'نماذج مخصصة لـ UA و Stool بقيم مرجعية دقيقة.', x:'إدخال سريع بقوائم جاهزة، وتقرير مستقل يتبع ألوان وخطوط إعداداتك.'},
+    {i:'🧬', t:'السائل المنوي وتجزؤ DNA', d:'تحليل حسب معايير WHO 2021 مع تجزؤ الحمض النووي وتحضير IUI.', x:'حسابات الحركة والتركيز والأشكال تتم تلقائياً مع تقرير احترافي.'},
+    {i:'🧮', n:1, t:'التحاليل المحسوبة', d:'HOMA-IR و eGFR و LDL وغيرها تُحسب تلقائياً.', x:'بمجرد وصول القيم المرتبطة يحسب البرنامج الناتج ويضعه في التقرير دون تدخل.'},
+    {i:'📈', n:1, t:'منحنى GTT', d:'رسم منحنى تحمل الجلوكوز تلقائياً في التقرير.', x:'تُدخل قراءات الأوقات المختلفة فيظهر منحنى واضح مع الحدود الطبيعية.'},
+    {i:'🔁', n:1, t:'Delta Check', d:'مقارنة النتيجة الحالية بآخر نتيجة للمراجع.', x:'ينبّهك إذا تغيرت القيمة بشكل غير منطقي، لاكتشاف خطأ العينة أو الإدخال قبل التسليم.'},
+    {i:'⚠️', t:'تنبيهات النتائج الحرجة', d:'سجل خاص بالقيم الخطرة لمتابعة فورية.', x:'مرتب من الأحدث للأقدم مع إمكانية فتح الطلب مباشرة.'},
+    {i:'✅', t:'ضبط الجودة QC', d:'سجل جودة لمراقبة أداء الأجهزة والتحاليل.', x:'متابعة نتائج المواد الضابطة عبر الزمن لاكتشاف انحراف الجهاز مبكراً.'},
+  ]},
+  { id:'lis', icon:'🔌', title:'ربط أجهزة المختبر (LIS)', desc:'النتائج تصل وحدها', cards:[
+    {i:'📡', t:'دعم HL7 و ASTM', d:'اتصال مباشر مع محللات الدم والكيمياء والهرمونات.', x:'يدعم HL7/MLLP و ASTM عبر TCP/IP أو المنفذ التسلسلي Serial.'},
+    {i:'🔄', n:1, t:'Host Query ثنائي الاتجاه', d:'الجهاز يطلب تحاليل العينة من البرنامج بقراءة الباركود.', x:'مثل Snibe CL-900i: تضع الأنبوب فيعرف الجهاز التحاليل المطلوبة دون برمجتها يدوياً.'},
+    {i:'🩸', n:1, t:'Mindray BC-5000/5150/6000', d:'ربط كامل مع المخططات البيانية (Histograms).', x:'تُستلم الرسومات مع القيم وتُطبع في تقرير CBC.'},
+    {i:'🧪', n:1, t:'Zybio Z60 / Z3', d:'ربط مخصص لأجهزة Zybio.', x:'استقبال النتائج وربطها بالمراجع تلقائياً عبر رقم العينة.'},
+    {i:'⚗️', n:1, t:'Roche cobas c111', d:'ربط عبر ASTM لجهاز الكيمياء.', x:'استلام النتائج مع مطابقة أكواد التحاليل.'},
+    {i:'🔀', t:'أجهزة متعددة بآن واحد', d:'كل جهاز بوضعه الخاص (Client/Server/Serial) دون تعارض.', x:'يمكن ربط محلل الدم والكيمياء والهرمونات بنفس الوقت على حاسبة واحدة.'},
+    {i:'🔗', t:'ربط أكواد التحاليل', d:'مطابقة أكواد الجهاز مع تحاليل البرنامج.', x:'يضمن وصول كل قيمة إلى التحليل الصحيح في ملف المراجع.'},
+    {i:'📸', n:1, t:'MedLab Scan', d:'تطبيق موبايل يصوّر نتيجة الجهاز ويحوّلها إلى أرقام.', x:'للأجهزة غير القابلة للربط: صوّر الورقة المطبوعة فتُقرأ القيم وتُدخل في الطلب تلقائياً.'},
+    {i:'📥', t:'سجل الرسائل', d:'سجل تفصيلي لكل رسالة من وإلى الأجهزة.', x:'لتشخيص أي مشكلة اتصال بسهولة، والإعدادات محمية بكلمة مرور خاصة.'},
+  ]},
+  { id:'print', icon:'🖨️', title:'النتائج والطباعة والتقارير', desc:'تقارير بهوية مختبرك', cards:[
+    {i:'👁️', n:1, t:'معاينة التقرير مع تكبير', d:'زر معاينة في شاشة النتائج يعرض التقرير كاملاً قبل الطباعة.', x:'تكبير وتصغير وعرض كل الصفحات كما ستُطبع بالضبط.'},
+    {i:'🎛️', n:1, t:'أزرار طباعة منظّمة', d:'حفظ وطباعة، ملصق، ورقة عمل، وصل حساب — كل زر بلون مميز.', x:'شريط لوني يميّز كل زر لتقليل الأخطاء أثناء ضغط العمل.'},
+    {i:'🧾', t:'قوالب تقارير متعددة', d:'10 قوالب لتقرير CBC وعدة قوالب للتقارير العامة.', x:'القوالب تتبع ألوان وخطوط إعداداتك، بما فيها تقارير البول والبراز والسائل المنوي.'},
+    {i:'🏷️', t:'ملصقات صامتة', d:'طباعة باركود مباشرة دون نوافذ تأكيد.', x:'أحجام قابلة للتخصيص ولكل نوع طابعة إعداده.'},
+    {i:'📋', n:1, t:'ورقة عمل A5', d:'ورقة بكل تحاليل المراجع للفني.', x:'تُطبع على طابعة منفصلة يمكن اختيارها من الإعدادات.'},
+    {i:'🧾', n:1, t:'وصل حساب حراري', d:'وصل مرتب للمراجع على طابعة الإيصالات.', x:'يتضمن التحاليل والمبالغ والمدفوع والمتبقي.'},
+    {i:'📄', t:'تصدير PDF', d:'حفظ أي تقرير كملف PDF جاهز للمشاركة.', x:'ملف خفيف وواضح مع الترويسة والتذييل.'},
+    {i:'✍️', t:'علامة مائية وتوقيع', d:'توقيع الطبيب/الفني وعلامة مائية تلقائياً.', x:'مع التحكم بارتفاع الرأس والتذييل والشعار والخطوط.'},
+  ]},
+  { id:'comm', icon:'💬', title:'التواصل مع المراجعين', desc:'النتيجة تصل لصاحبها', cards:[
+    {i:'📱', t:'إرسال النتائج عبر واتساب', d:'ملف PDF للنتيجة يُرسل للمراجع بضغطة واحدة.', x:'بدون حفظ يدوي أو بحث عن الملف — يُجهّز ويُرسل مباشرة.'},
+    {i:'🔳', n:1, t:'بوابة المراجع برمز QR', d:'رمز QR على الوصل يفتح نتائج المراجع من هاتفه.', x:'يقلل الزحام والاتصالات: المراجع يتابع حالة تحاليله بنفسه.'},
+    {i:'🩺', n:1, t:'بوابة الطبيب', d:'الطبيب المحوّل يرى نتائج مرضاه مباشرة.', x:'خدمة مميزة للأطباء المتعاونين مع مختبرك.'},
+    {i:'📺', n:1, t:'شاشة الانتظار والبث للتلفاز', d:'عرض قائمة الانتظار على تلفاز القاعة لاسلكياً.', x:'يدعم البث عبر Google Cast بدون كابل.'},
+    {i:'📢', n:1, t:'المناداة الصوتية', d:'نداء المراجع بالصوت من حاسبة السحب.', x:'زر اضغط وتكلم بين الحاسبات، مع نداء آلي باسم المراجع.'},
+    {i:'💬', t:'محادثات داخلية و MedLabChat', d:'مراسلة بين المستخدمين والمختبرات الجانبية.', x:'إرسال ملفات وطلبات ونتائج بين المختبر الرئيسي والمختبرات المتعاونة.'},
+  ]},
+  { id:'store', icon:'🛒', title:'متجر ميدلاب هوم', desc:'طلبات التحاليل والسحب المنزلي', cards:[
+    {i:'🛍️', n:1, t:'متجر تحاليل للمراجعين', d:'تطبيق يطلب منه المراجع التحاليل أونلاين.', x:'أسعار وباقات واضحة، والطلب يصل مباشرة إلى البرنامج.'},
+    {i:'🏠', n:1, t:'السحب المنزلي', d:'طلب سحب عينة من البيت مع العنوان والموعد.', x:'يظهر الطلب في قسم «طلبات المتجر» مع إشعار فوري للمختبر.'},
+    {i:'🔔', n:1, t:'إشعارات الطلبات', d:'تنبيه داخل البرنامج عند وصول طلب جديد.', x:'تحويل الطلب إلى تسجيل مراجع بنقرة واحدة.'},
+  ]},
+  { id:'money', icon:'💰', title:'الحسابات والمخزون والموظفين', desc:'إدارة مالية كاملة', cards:[
+    {i:'🧮', t:'فوترة وحسابات', d:'فواتير مرتبطة بالطلبات مع قسم حسابات ومصروفات.', x:'تقارير يومية وشهرية للإيرادات والمصروفات بالدينار العراقي.'},
+    {i:'💳', n:1, t:'تعديل الدفع والديون', d:'تسديد المبالغ المتبقية وتعديل حالة الدفع بسهولة.', x:'متابعة المراجعين المدينين وتسجيل الدفعات الجزئية.'},
+    {i:'📦', t:'المخزون والكواشف', d:'تتبع الكواشف والمستلزمات مع تنبيه النفاد.', x:'تعرف متى تطلب الكواشف قبل أن تنفد.'},
+    {i:'🕒', n:1, t:'حضور الموظفين بالوجه', d:'تسجيل الحضور والانصراف عبر الكاميرا.', x:'بدون بطاقات أو أجهزة إضافية، مع سجل كامل للتأخير والغياب.'},
+    {i:'👥', t:'الرواتب والإجازات', d:'حساب الرواتب ومتابعة الإجازات.', x:'إجازات اعتيادية ومرضية وساعات، مع حساب تلقائي.'},
+  ]},
+  { id:'sync', icon:'☁️', title:'المزامنة والنسخ الاحتياطي', desc:'بياناتك آمنة ومتاحة', cards:[
+    {i:'💾', t:'يعمل بدون إنترنت', d:'البرنامج يعمل بالكامل محلياً ويزامن عند توفر الاتصال.', x:'انقطاع الإنترنت لا يوقف المختبر أبداً.'},
+    {i:'🖧', n:1, t:'مزامنة الشبكة المحلية LAN', d:'عدة حاسبات تعمل على نفس البيانات بشكل لحظي.', x:'الاستقبال والسحب والنتائج والإدارة — كلها متصلة مع مصادقة لحماية الشبكة.'},
+    {i:'🔄', t:'مزامنة سحابية', d:'مزامنة الطلبات والنتائج بين الفروع والموبايل.', x:'متابعة المختبر من أي مكان.'},
+    {i:'🗂️', n:1, t:'نسخ احتياطي إلى Google Drive', d:'رفع واسترجاع ونسخ تلقائي سحابي.', x:'حتى لو تعطلت الحاسبة، بياناتك محفوظة في حسابك على Google Drive.'},
+    {i:'🖨️', n:1, t:'الطباعة عن بُعد', d:'إرسال أمر طباعة إلى طابعة حاسبة أخرى في المختبر.', x:'مثلاً: الاستقبال يطبع الملصق على طابعة غرفة السحب مباشرة.'},
+    {i:'📤', t:'استيراد وتصدير البيانات', d:'نسخ احتياطي واسترجاع كامل بضغطة.', x:'مع نسخ تلقائي دوري إلى مجلد تختاره.'},
+  ]},
+  { id:'security', icon:'🛡️', title:'الأمان والصلاحيات', desc:'كل مستخدم يرى ما يخصه', cards:[
+    {i:'🧩', t:'صلاحيات متعددة المستويات', d:'تحكم دقيق بما يراه ويعدّله كل مستخدم.', x:'موظف الاستقبال لا يعدّل النتائج، والفني لا يرى الحسابات — حسب ما تقرره.'},
+    {i:'📶', t:'إدارة الجلسات', d:'عرض الأجهزة المسجلة وإنهاء أي جلسة عن بعد.', x:'حماية من استخدام حساب بعد ترك الموظف للعمل.'},
+    {i:'📜', n:1, t:'سجل التعديلات', d:'من عدّل ماذا ومتى ومن أي حاسبة.', x:'يشمل التعديلات القادمة عبر الشبكة أو السحابة.'},
+  ]},
+  { id:'ux', icon:'✨', title:'تجربة الاستخدام', desc:'سريع وجميل ومريح', cards:[
+    {i:'🌗', n:1, t:'وضع ليلي ونهاري', d:'واجهة داكنة بتصميم نيون أو فاتحة حسب رغبتك.', x:'تتبدل بنقرة وتُحفظ لكل مستخدم.'},
+    {i:'⬆️', n:1, t:'تحديثات تلقائية', d:'يصلك كل جديد بدون إعادة تثبيت.', x:'تنزيل التحديث بالخلفية وتطبيقه عند إعادة التشغيل.'},
+    {i:'🌐', t:'عربي بالكامل', d:'كل الشاشات والتقارير بالعربية واتجاه RTL.', x:'مع دعم أسماء التحاليل والقيم بالإنجليزية في التقارير.'},
+    {i:'🖥️', t:'تطبيق سطح مكتب', d:'برنامج Windows متكامل يعمل بدون متصفح.', x:'مبني على Electron للوصول المباشر للطابعات والأجهزة والكاميرات.'},
+    {i:'⚡', t:'أداء سريع', d:'استجابة فورية حتى مع آلاف المراجعين.', x:'قاعدة بيانات محلية سريعة وتحميل ذكي للشاشات.'},
+  ]},
 ];
 
+/* ---------- render ---------- */
 const content = document.getElementById('content');
-DATA.forEach((cat, ci)=>{
-  const catCount = cat.cards.length;
-  const section = document.createElement('div');
-  section.className = 'cat';
-  section.innerHTML = `
-    <div class="cat-head">
+const chips = document.getElementById('chips');
+let total = 0;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+chips.insertAdjacentHTML('beforeend', '<button class="chip on" data-go="all">الكل</button><button class="chip" data-go="gallery">📸 نماذج من النظام</button>');
+DATA.forEach(cat => {
+  total += cat.cards.length;
+  const sec = document.createElement('section');
+  sec.className = 'cat'; sec.id = 'c-' + cat.id;
+  sec.innerHTML = `
+    <div class="cat-head reveal">
       <div class="cat-ico">${cat.icon}</div>
-      <h2>${cat.title}</h2>
-      <div class="cat-count">${catCount} ميزة</div>
+      <div><h2>${esc(cat.title)}</h2><div class="cat-desc">${esc(cat.desc)}</div></div>
+      <div class="cat-count">${cat.cards.length} ميزة</div>
     </div>
-    <div class="grid">
-      ${cat.cards.map(c=>`
-        <div class="card">
-          <span class="ico">${c.i}</span>
-          <h3>${c.t}</h3>
-          <p>${c.d}</p>
-        </div>
-      `).join('')}
-    </div>
-  `;
-  content.appendChild(section);
+    <div class="grid">${cat.cards.map(c => `
+      <div class="card" tabindex="0" role="button" aria-expanded="false" data-s="${esc((c.t+' '+c.d+' '+c.x).toLowerCase())}">
+        ${c.n ? '<span class="new">جديد</span>' : ''}
+        <span class="ico">${c.i}</span>
+        <h3>${esc(c.t)}</h3>
+        <p>${esc(c.d)}</p>
+        <div class="more"><div><p>${esc(c.x)}</p></div></div>
+        <div class="hint">كيف يعمل؟</div>
+      </div>`).join('')}
+    </div>`;
+  content.appendChild(sec);
+  chips.insertAdjacentHTML('beforeend', `<button class="chip" data-go="c-${cat.id}">${cat.icon} ${esc(cat.title)}</button>`);
+});
+document.getElementById('statFeatures').dataset.count = total;
+document.getElementById('statCats').dataset.count = DATA.length;
+
+/* ---------- expand cards ---------- */
+content.addEventListener('click', e => {
+  const c = e.target.closest('.card'); if (!c) return;
+  const o = c.classList.toggle('open'); c.setAttribute('aria-expanded', o);
+});
+content.addEventListener('keydown', e => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('card')) { e.preventDefault(); e.target.click(); }
 });
 
-// Scroll reveal
-const observer = new IntersectionObserver((entries)=>{
-  entries.forEach(e=>{
-    if(e.isIntersecting){
-      e.target.classList.add('show');
-    }
+/* ---------- reveal ---------- */
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('show'); io.unobserve(e.target); } }), {threshold:.12});
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.grid').forEach(g => g.querySelectorAll('.card').forEach((el, i) => { el.style.transitionDelay = (i % 6) * .06 + 's'; io.observe(el); }));
+
+/* ---------- counters ---------- */
+function countUp(el){
+  const to = +el.dataset.count, suf = el.dataset.suf || '', plus = el.dataset.plus ? '+' : '';
+  const t0 = performance.now(), dur = 1400;
+  (function f(t){ const k = Math.min(1,(t-t0)/dur), v = Math.round(to*(1-Math.pow(1-k,3))); el.textContent = v + suf + plus; if(k<1) requestAnimationFrame(f); })(t0);
+}
+setTimeout(() => document.querySelectorAll('.stat b').forEach(countUp), 600);
+
+/* ---------- typed ---------- */
+const PH = ['يتعرف على المراجع بوجهه 📷','يستلم النتائج من الأجهزة تلقائياً 🔬','يرسل النتيجة على واتساب 📱','يعمل بدون إنترنت 💾','يربط كل حاسبات المختبر 🖧'];
+const tEl = document.getElementById('typed');
+let pi = 0, ci = 0, del = false;
+(function type(){
+  const s = PH[pi];
+  tEl.textContent = s.slice(0, ci);
+  if (!del && ci < s.length) { ci++; setTimeout(type, 55); }
+  else if (!del) { del = true; setTimeout(type, 1700); }
+  else if (ci > 0) { ci--; setTimeout(type, 25); }
+  else { del = false; pi = (pi + 1) % PH.length; setTimeout(type, 300); }
+})();
+
+/* ---------- journey highlight ---------- */
+const steps = document.querySelectorAll('#journey .step');
+let si = 0;
+setInterval(() => { steps.forEach((s, i) => s.classList.toggle('lit', i === si)); si = (si + 1) % steps.length; }, 1170);
+
+/* ---------- chips nav ---------- */
+chips.addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  const id = b.dataset.go;
+  const el = document.getElementById(id);
+  if (el) window.scrollTo({top: el.getBoundingClientRect().top + scrollY - 90, behavior:'smooth'});
+});
+const secs = [...document.querySelectorAll('.cat')];
+function syncChip(){
+  let cur = 'all';
+  secs.forEach(s => { if (s.getBoundingClientRect().top < 140) cur = s.id; });
+  chips.querySelectorAll('.chip').forEach(c => {
+    const on = c.dataset.go === cur;
+    if (on && !c.classList.contains('on')) { c.classList.add('on'); c.scrollIntoView({inline:'center', block:'nearest'}); }
+    else if (!on) c.classList.remove('on');
   });
-}, {threshold:0.15});
+}
 
-document.querySelectorAll('.cat-head, .card').forEach((el,idx)=>{
-  el.style.transitionDelay = (idx % 6) * 0.06 + 's';
-  observer.observe(el);
+/* ---------- search ---------- */
+const q = document.getElementById('q'), empty = document.getElementById('empty');
+q.addEventListener('input', () => {
+  const v = q.value.trim().toLowerCase(); let any = 0;
+  secs.forEach(s => {
+    let n = 0;
+    s.querySelectorAll('.card').forEach(c => { const m = !v || c.dataset.s.includes(v) || s.querySelector('h2').textContent.toLowerCase().includes(v); c.classList.toggle('hide', !m); if (m) { n++; c.classList.add('show'); } });
+    s.classList.toggle('hide', !n); any += n;
+  });
+  empty.style.display = any ? 'none' : 'block';
+  if (v) { const a = document.getElementById('all'); if (a.getBoundingClientRect().top > innerHeight || a.getBoundingClientRect().top < -50) window.scrollTo({top: a.getBoundingClientRect().top + scrollY - 90, behavior:'smooth'}); }
 });
 
-// Progress bar
-const bar = document.getElementById('progressBar');
-window.addEventListener('scroll', ()=>{
-  const h = document.documentElement;
-  const scrolled = h.scrollTop / (h.scrollHeight - h.clientHeight);
-  bar.style.transform = `scaleX(${scrolled})`;
-});
+/* ---------- gallery ---------- */
+const GCATS=[['all','الكل'],['home','الاستقبال والمرضى'],['res','النتائج'],['rep','التقارير المطبوعة'],['fin','المالية والمخزون'],['store','المتجر والسحب المنزلي'],['set','الإعدادات والأجهزة']];
+const GAL=[
+ ['dashboard','home','لوحة التحكم','إحصائيات اليوم، آخر الطلبات، وتنبيهات فورية للنتائج الحرجة مرتبة من الأحدث للأقدم.'],
+ ['s009','home','لوحة التحكم — الشاشة الكاملة','مرضى اليوم، التحاليل المنجزة، المعلّقة، إيرادات اليوم، آخر الطلبات مع حالتها، وتنبيهات حرجة (HCG، LH، PRL، CRP) تطلب مراجعة فورية.'],
+ ['s007','home','تسجيل مراجع — الخطوة 1: البيانات','اختيار اللقب بضغطة (السيد، السيدة، الطفل، الدكتور…)، الاسم الكامل، العمر بالسنة/الشهر/اليوم أو سنة الميلاد، الطبيب المحوّل، والهاتف بمفتاح العراق +964.'],
+ ['wizard','home','تسجيل مراجع جديد + بصمة الوجه','معالج التسجيل مع لوحة «المراجعون الآن» — الكاميرا تعمل وتقترح المراجع المعروف تلقائياً.'],
+ ['s002','home','تسجيل مراجع — الخطوة 2: اختيار التحاليل','بحث بالاسم أو الرمز، أزرار سريعة للتحاليل الشائعة، مكوّنات CBC، نوع العينة والأولوية، الخصم وطريقة الدفع، ثم «حفظ وإنشاء الطلب».'],
+ ['s003','home','قائمة المرضى','سجل كامل (7320 مريض) مع رقم الملف، العمر، آخر زيارة، والحالة — وأزرار فتح الملف وإرسال النتيجة للمريض مباشرة.'],
+ ['waitqueue','home','طابور الانتظار','متابعة حالة كل طلب (انتظار / جاري / جاهز) من داخل البرنامج.'],
+ ['s026','home','شاشة قاعة الانتظار (التلفاز)','شاشة HDMI بخط كبير تعرض رقم الطلب والحالة «جاري التحليل / جاهز» مع ساعة حية وعدّاد اليوم ورقم المختبر للاستفسار.'],
+ ['attendance','home','حضور الموظفين بالوجه','تسجيل الحضور والانصراف بالكاميرا مع ساعة مباشرة.'],
+ ['s017','home','لوحة تسجيل الحضور','حاضر الآن، المتأخرون، لم يحضروا، الإجازات — مع تبويبات الموظفين وسجل الحضور والإحصائيات، والتسجيل بنظرة واحدة للكاميرا.'],
+ ['results','res','إدخال النتائج','تفسير تلقائي (Normal / High)، نتيجة CBC واصلة من الجهاز، وأزرار الطباعة الملوّنة ومعاينة التقرير.'],
+ ['s015','res','إدخال النتائج — شاشة الطلب','بيانات المريض والطبيب ونوع العينة في الأعلى، المدى الطبيعي والوحدة لكل فحص، ملاحظة وتفسير، ثم: حفظ وطباعة، ملصق، ورقة عمل، وصل، PDF، مشاركة واتساب، إرسال للجهاز.'],
+ ['s020','res','نتائج الزرع والحساسية','كل زرعة مع البكتيريا المعزولة (E. coli، Staph aureus، Candida…) وعدد المضادات حساسة/متوسطة/مقاومة (S / I / R)، مع طباعة وواتساب.'],
+ ['s025','res','تحليل السائل المنوي (Semen Analysis)','قائمة النتائج مع التركيز، الحركة التقدمية PR، الأشكال الطبيعية والتشخيص — وتصدير PDF وطباعة لكل نتيجة.'],
+ ['s010','res','عدّاد ESR','عدّادات متعددة لترسيب الدم بمدة قابلة للضبط، شريط تقدّم، وإنذار صوتي يُسمع من سماعات الحاسبة عند انتهاء الوقت.'],
+ ['s001','res','بوابة الطبيب','الطبيب يشاهد تقارير مرضاه عبر شبكة المختبر (سيرفر LAN) — تحديث تلقائي كل 5 ثوانٍ، وتمييز المكتمل من قيد الانتظار.'],
+ ['rep_cbc','rep','تقرير CBC مع المخططات','قالب تقرير الدم مع رسومات WBC و RBC و PLT، وتلوين القيم الشاذة.'],
+ ['s037','rep','تقرير بقالب المربعات','تقرير مجمّع مقسّم حسب الأقسام (Coagulation، Diabetes، Lipid، Liver، Virology) مع أسهم ▲▼ للقيم المرتفعة والمنخفضة وعمود النتيجة السابقة.'],
+ ['s034','rep','تقرير بقالب جدولي','نفس التحاليل بقالب جدولي واضح مع عمود Flag (H / L / N) وآخر نتيجة — الرأس والتذييل وبيانات المختبر قابلة للتخصيص.'],
+ ['s031','rep','تقرير زرع الإدرار (Urine C&S)','الفحص المباشر، البكتيريا المعزولة بإطار بارز، وجدول حساسية المضادات بثلاث أعمدة: Sensitive / Intermediate / Resistant وفق CLSI.'],
+ ['s033','rep','تقرير فحص الإدرار العام (GUE)','الفحص الفيزيائي، الشريط الكيميائي، والمجهري — مع تأشير القيم غير الطبيعية باللون الأحمر.'],
+ ['s036','rep','فحص الإدرار العام — قالب بخط كبير','نفس التقرير بقالب جدولي بخط كبير سهل القراءة.'],
+ ['s032','rep','تقرير فحص الخروج العام (GSE)','الفحص العياني والكيميائي والمجهري وقسم الطفيليات — يُبرز Entamoeba histolytica (Trophozoite / Cyst) باللون الأحمر.'],
+ ['s035','rep','فحص الخروج العام — قالب بخط كبير','نسخة جدولية بخط كبير من تقرير GSE.'],
+ ['s030','rep','ورقة العمل (Work Sheet)','للفني داخل المختبر: باركود الطلب ونوع الأنبوب (EDTA)، وقائمة التحاليل المطلوبة مع مربعات تأشير ومكان التدقيق والتوقيع.'],
+ ['s029','rep','وصل الحساب الحراري','وصل للطابعة الحرارية: بيانات المريض ورقم الوصل، سعر كل تحليل، المجموع والمدفوع والمتبقي، مع باركود الطلب.'],
+ ['s028','rep','ملصق باركود الأنبوب','ملصق صغير لكل أنبوب برقم الطلب واسم المريض وترقيم «طلب 2 من 2».'],
+ ['s004','fin','الفواتير','مجموع الفواتير والمدفوع والمتبقي، فلترة مدفوع / غير مدفوع، الدفع الافتراضي للطلبات الجديدة، وزر تسديد لكل فاتورة.'],
+ ['s012','fin','التقارير والحسابات','لوحة موحّدة: المصروفات، تسعير التحاليل، تقارير الأجهزة، تقارير المرضى والإيرادات والتحاليل والشركات، والبحث عن النتائج غير الطبيعية.'],
+ ['s023','fin','تقرير الإيرادات اليومي','الإيرادات الكلية والصافية، المدفوع نقداً وإلكترونياً، الخصومات والمعاملات، مع تصدير Excel وطباعة.'],
+ ['s027','fin','المصروفات','إضافة مصروف بالفئة والمبلغ وطريقة الدفع (نقدي / إلكتروني)، وحركة المصروفات اليومية مع المجموع.'],
+ ['s013','fin','مصروف الشركات والتسديد','تسجيل فواتير الشركات المجهّزة مع الإجمالي والمسدّد والمتبقي وتاريخ الوصل وطريقة الدفع.'],
+ ['s006','fin','المخزون والكواشف','الكمية والحد الأدنى وتاريخ الانتهاء لكل كاشف، مع تنبيه «نفاد» تلقائي.'],
+ ['s008','store','طلبات المتجر — خليك','طلبات التطبيق مع حالة كل مرحلة (مقبول ← الساحب بالطريق ← تم السحب ← في المختبر ← النتيجة مرسلة ← تم التسليم)، العنوان على الخريطة، وأجرة الساحب.'],
+ ['s024','store','إعدادات المتجر والسحب المنزلي','كود المختبر و QR للتطبيق، بيانات وأوقات العمل، أجور السحب المنزلي، وإدارة موظفي السحب.'],
+ ['s021','set','ربط الأجهزة (LIS Bridge)','أجهزة متصلة فعلياً: Mindray CL-900i، Roche cobas c111، Maglumi 600، Fuji Dri-Chem NX600، Mindray BC-5000 — مع ربط رمز كل تحليل في الجهاز برمزه في البرنامج.'],
+ ['s005','set','قاعدة التحاليل','873 تحليل مقسّمة حسب الأقسام، مع الرمز والاسم والوحدة والمدى الطبيعي والسعر ووقت التقرير، واستيراد من Excel.'],
+ ['s022','set','تعديل تحليل','الاسم الكامل والمختصر، الرمز، القسم والوحدة، نوع القيمة، ومدى طبيعي منفصل للذكور والإناث.'],
+ ['s019','set','الإعدادات','بيانات المختبر، رأس وتذييل التقرير، العلامة المائية، التوقيع، أجهزة الأفرع، الطباعة، المعرّفات الذكية، الخطوط والألوان، مجموعات التحاليل.'],
+ ['s018','set','إعدادات الطباعة','الطباعة عبر الشبكة، نماذج التقارير والطباعة التلقائية، اختيار الطابعات، حجم ملصق الباركود، وحجم ورقة العمل والوصل.'],
+ ['s000','set','الخطوط وأحجامها','نوع خط الواجهة والتقرير وثخانته، وحجم كل بند في التقرير على حدة (اسم الفحص، النتيجة، الوحدة، المدى…).'],
+ ['s016','set','ألوان التقرير والفواصل','لون اسم المريض والطبيب والنتيجة والجدول وأسماء الأقسام، والفواصل بين التحاليل والأقسام.'],
+ ['s014','set','النسخ الاحتياطي والاستعادة','استيراد من برنامج Green Lab، مؤشر التخزين، النقل عبر الفلاش، النسخ السحابي على Google Drive، والجدولة التلقائية.'],
+ ['s011','set','حماية العمليات الحساسة','تأكيد الهوية بكلمة المرور قبل أي عملية حساسة على قاعدة البيانات، وزر إصلاح مشاكل الواجهة.']
+];
+const galImg=document.getElementById('galImg'),galT=document.getElementById('galT'),galD=document.getElementById('galD'),galTh=document.getElementById('galThumbs'),galTabs=document.getElementById('galTabs'),galCnt=document.getElementById('galCnt');
+let gList=GAL.map((_,i)=>i),gp=0,gTimer;
+const src=i=>'samples/'+GAL[i][0]+'.webp';
+GCATS.forEach(([k,t])=>{const n=k==='all'?GAL.length:GAL.filter(g=>g[1]===k).length;galTabs.insertAdjacentHTML('beforeend',`<button data-c="${k}" class="${k==='all'?'on':''}">${t}<i>${n}</i></button>`);});
+function galBuild(){galTh.innerHTML=gList.map((i,j)=>`<button data-j="${j}" aria-label="${GAL[i][2]}"><img src="${src(i)}" alt="${GAL[i][2]}" loading="lazy"></button>`).join('');}
+function galShow(j,scroll){gp=(j+gList.length)%gList.length;const i=gList[gp],g=GAL[i];galImg.style.opacity=0;setTimeout(()=>{galImg.src=src(i);galImg.alt=g[2];galImg.style.opacity=1;},160);galT.textContent=g[2];galD.textContent=g[3];galCnt.textContent=(gp+1)+' / '+gList.length;galTh.querySelectorAll('button').forEach((b,k)=>{b.classList.toggle('on',k===gp);if(k===gp&&scroll!==false){const L=b.offsetLeft-galTh.clientWidth/2+b.clientWidth/2;galTh.scrollTo({left:L,behavior:'smooth'});}});
+ const nx=gList[(gp+1)%gList.length];new Image().src=src(nx);}
+function galAuto(){clearInterval(gTimer);gTimer=setInterval(()=>{if(!lb.classList.contains('on'))galShow(gp+1);},5000);}
+galTabs.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;galTabs.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));const c=b.dataset.c;gList=GAL.map((g,i)=>[g,i]).filter(([g])=>c==='all'||g[1]===c).map(x=>x[1]);galBuild();galShow(0);galAuto();});
+galTh.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;galShow(+b.dataset.j);galAuto();});
+document.getElementById('gPrev').addEventListener('click',e=>{e.stopPropagation();galShow(gp-1);galAuto();});
+document.getElementById('gNext').addEventListener('click',e=>{e.stopPropagation();galShow(gp+1);galAuto();});
+const lb=document.getElementById('lb'),lbImg=document.getElementById('lbImg'),lbCap=document.getElementById('lbCap');
+function lbSet(){const i=gList[gp];lbImg.src=src(i);lbCap.textContent=GAL[i][2]+'  ('+(gp+1)+' / '+gList.length+')';lb.classList.remove('full');}
+function lbClose(){lb.classList.remove('on','full');document.body.style.overflow='';galAuto();}
+document.getElementById('galMain').addEventListener('click',()=>{lbSet();lb.classList.add('on');document.body.style.overflow='hidden';clearInterval(gTimer);});
+lbImg.addEventListener('click',e=>{e.stopPropagation();lb.classList.toggle('full');});
+document.getElementById('lbPrev').addEventListener('click',e=>{e.stopPropagation();galShow(gp-1);lbSet();});
+document.getElementById('lbNext').addEventListener('click',e=>{e.stopPropagation();galShow(gp+1);lbSet();});
+document.getElementById('lbX').addEventListener('click',e=>{e.stopPropagation();lbClose();});
+lb.addEventListener('click',e=>{if(e.target===lb)lbClose();});
+let tx=0;[galImg,lbImg].forEach(el=>{el.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});el.addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>50){galShow(d>0?gp+1:gp-1);if(lb.classList.contains('on'))lbSet();galAuto();}},{passive:true});});
+document.addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')lbClose();if(e.key==='ArrowLeft'){galShow(gp+1);lbSet();}if(e.key==='ArrowRight'){galShow(gp-1);lbSet();}});
+galBuild();galShow(0,false);galAuto();
+
+/* ---------- progress / to top ---------- */
+const bar = document.getElementById('progressBar'), toTop = document.getElementById('totop');
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (ticking) return; ticking = true;
+  requestAnimationFrame(() => {
+    const h = document.documentElement;
+    bar.style.transform = `scaleX(${h.scrollTop / (h.scrollHeight - h.clientHeight)})`;
+    toTop.classList.toggle('on', h.scrollTop > 700);
+    syncChip(); ticking = false;
+  });
+}, {passive:true});
+toTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
 </script>
 </body>
 </html>
